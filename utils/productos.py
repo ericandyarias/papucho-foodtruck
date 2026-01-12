@@ -1,0 +1,211 @@
+"""
+Módulo para gestión de productos en el archivo JSON
+Maneja operaciones CRUD y asegura que las categorías fijas existan
+"""
+import json
+import os
+
+
+# Categorías fijas del sistema
+CATEGORIAS_FIJAS = [
+    "Hamburguesas",
+    "Lomitos",
+    "Milanesas",
+    "Fritas",
+    "Empanadas",
+    "Bebidas"
+]
+
+
+def obtener_ruta_json():
+    """Obtiene la ruta del archivo JSON de productos"""
+    return os.path.join(
+        os.path.dirname(os.path.dirname(__file__)),
+        'data',
+        'productos.json'
+    )
+
+
+def cargar_productos():
+    """Carga los productos desde el archivo JSON"""
+    ruta = obtener_ruta_json()
+    try:
+        with open(ruta, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+            # Asegurar que todas las categorías fijas existan
+            asegurar_categorias_fijas(data)
+            guardar_productos(data)
+            return data
+    except FileNotFoundError:
+        # Crear estructura inicial con categorías fijas
+        data = {"categorias": []}
+        asegurar_categorias_fijas(data)
+        guardar_productos(data)
+        return data
+    except json.JSONDecodeError:
+        print("Error: El archivo productos.json no es válido. Se creará uno nuevo.")
+        data = {"categorias": []}
+        asegurar_categorias_fijas(data)
+        guardar_productos(data)
+        return data
+
+
+def guardar_productos(data):
+    """Guarda los productos en el archivo JSON"""
+    ruta = obtener_ruta_json()
+    # Asegurar que el directorio existe
+    os.makedirs(os.path.dirname(ruta), exist_ok=True)
+    with open(ruta, 'w', encoding='utf-8') as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+
+
+def asegurar_categorias_fijas(data):
+    """Asegura que todas las categorías fijas existan en los datos"""
+    categorias_existentes = {cat["nombre"] for cat in data.get("categorias", [])}
+    
+    for categoria_nombre in CATEGORIAS_FIJAS:
+        if categoria_nombre not in categorias_existentes:
+            data.setdefault("categorias", []).append({
+                "nombre": categoria_nombre,
+                "productos": []
+            })
+
+
+def obtener_siguiente_id():
+    """Obtiene el siguiente ID disponible para un nuevo producto"""
+    data = cargar_productos()
+    max_id = 0
+    
+    for categoria in data.get("categorias", []):
+        for producto in categoria.get("productos", []):
+            if producto.get("id", 0) > max_id:
+                max_id = producto.get("id", 0)
+    
+    return max_id + 1
+
+
+def obtener_todos_los_productos():
+    """Obtiene todos los productos de todas las categorías"""
+    data = cargar_productos()
+    productos = []
+    
+    for categoria in data.get("categorias", []):
+        for producto in categoria.get("productos", []):
+            productos.append({
+                **producto,
+                "categoria": categoria["nombre"]
+            })
+    
+    return productos
+
+
+def buscar_producto_por_id(producto_id):
+    """Busca un producto por su ID y retorna el producto con su categoría"""
+    data = cargar_productos()
+    
+    for categoria in data.get("categorias", []):
+        for producto in categoria.get("productos", []):
+            if producto.get("id") == producto_id:
+                return {
+                    "producto": producto,
+                    "categoria": categoria["nombre"]
+                }
+    
+    return None
+
+
+def agregar_producto(categoria_nombre, nombre, precio, descripcion):
+    """Agrega un nuevo producto a una categoría"""
+    data = cargar_productos()
+    
+    # Buscar la categoría
+    categoria = None
+    for cat in data.get("categorias", []):
+        if cat["nombre"] == categoria_nombre:
+            categoria = cat
+            break
+    
+    if not categoria:
+        # Si no existe, crearla (aunque debería existir por ser fija)
+        categoria = {"nombre": categoria_nombre, "productos": []}
+        data.setdefault("categorias", []).append(categoria)
+    
+    # Crear nuevo producto
+    nuevo_producto = {
+        "id": obtener_siguiente_id(),
+        "nombre": nombre,
+        "precio": float(precio),
+        "descripcion": descripcion
+    }
+    
+    categoria.setdefault("productos", []).append(nuevo_producto)
+    guardar_productos(data)
+    return nuevo_producto
+
+
+def modificar_producto(producto_id, categoria_nombre, nombre, precio, descripcion):
+    """Modifica un producto existente"""
+    data = cargar_productos()
+    
+    # Buscar y eliminar el producto de su categoría actual
+    producto_encontrado = None
+    categoria_original = None
+    
+    for categoria in data.get("categorias", []):
+        for idx, producto in enumerate(categoria.get("productos", [])):
+            if producto.get("id") == producto_id:
+                producto_encontrado = categoria["productos"].pop(idx)
+                categoria_original = categoria["nombre"]
+                break
+        if producto_encontrado:
+            break
+    
+    if not producto_encontrado:
+        return False
+    
+    # Actualizar datos del producto
+    producto_encontrado["nombre"] = nombre
+    producto_encontrado["precio"] = float(precio)
+    producto_encontrado["descripcion"] = descripcion
+    
+    # Si cambió de categoría, agregarlo a la nueva
+    if categoria_original != categoria_nombre:
+        # Buscar la nueva categoría
+        nueva_categoria = None
+        for cat in data.get("categorias", []):
+            if cat["nombre"] == categoria_nombre:
+                nueva_categoria = cat
+                break
+        
+        if nueva_categoria:
+            nueva_categoria.setdefault("productos", []).append(producto_encontrado)
+        else:
+            # Si no existe, crearla
+            nueva_categoria = {"nombre": categoria_nombre, "productos": [producto_encontrado]}
+            data.setdefault("categorias", []).append(nueva_categoria)
+    else:
+        # Si no cambió de categoría, volver a agregarlo
+        categoria_original_obj = None
+        for cat in data.get("categorias", []):
+            if cat["nombre"] == categoria_original:
+                categoria_original_obj = cat
+                break
+        if categoria_original_obj:
+            categoria_original_obj.setdefault("productos", []).append(producto_encontrado)
+    
+    guardar_productos(data)
+    return True
+
+
+def eliminar_producto(producto_id):
+    """Elimina un producto por su ID"""
+    data = cargar_productos()
+    
+    for categoria in data.get("categorias", []):
+        for idx, producto in enumerate(categoria.get("productos", [])):
+            if producto.get("id") == producto_id:
+                categoria["productos"].pop(idx)
+                guardar_productos(data)
+                return True
+    
+    return False
