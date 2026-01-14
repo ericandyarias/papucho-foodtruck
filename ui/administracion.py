@@ -50,9 +50,9 @@ class VentanaAdministracion:
         frame_principal = ttk.Frame(self.ventana, padding=10)
         frame_principal.pack(fill='both', expand=True)
         
-        # Configurar grid
-        frame_principal.columnconfigure(0, weight=1)
-        frame_principal.columnconfigure(1, weight=1)
+        # Configurar grid - hacer la lista más ancha
+        frame_principal.columnconfigure(0, weight=3)  # Lista más ancha
+        frame_principal.columnconfigure(1, weight=2)  # Formulario más estrecho
         frame_principal.rowconfigure(1, weight=1)
         
         # Título
@@ -110,7 +110,7 @@ class VentanaAdministracion:
         scrollbar = ttk.Scrollbar(frame_tree)
         scrollbar.grid(row=0, column=1, sticky='ns')
         
-        # Treeview
+        # Treeview (sin columna Categoría visible)
         self.tree = ttk.Treeview(
             frame_tree,
             columns=('ID', 'Categoría', 'Nombre', 'Precio', 'Descripción'),
@@ -128,10 +128,10 @@ class VentanaAdministracion:
         self.tree.heading('Descripción', text='Descripción')
         
         self.tree.column('ID', width=50)
-        self.tree.column('Categoría', width=120)
-        self.tree.column('Nombre', width=150)
-        self.tree.column('Precio', width=80)
-        self.tree.column('Descripción', width=200)
+        self.tree.column('Categoría', width=0, stretch=False)  # Ocultar columna Categoría
+        self.tree.column('Nombre', width=200)
+        self.tree.column('Precio', width=100)
+        self.tree.column('Descripción', width=300)
         
         self.tree.grid(row=0, column=0, sticky='nsew')
         self.tree.bind('<<TreeviewSelect>>', self.on_seleccionar_producto)
@@ -360,7 +360,9 @@ class VentanaAdministracion:
             if modificar_producto(producto_id, categoria, nombre, precio, descripcion):
                 messagebox.showinfo("Éxito", "Producto modificado correctamente")
                 self.cargar_lista_productos()
-                self.limpiar_formulario()
+                
+                # Preparar formulario para crear un nuevo producto
+                self.nuevo_producto()
                 
                 # Notificar actualización
                 if self.callback_actualizar:
