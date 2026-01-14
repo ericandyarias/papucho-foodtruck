@@ -133,12 +133,21 @@ class Seleccion(ttk.Frame):
             fila = idx // num_columnas
             columna = idx % num_columnas
             
-            btn = ttk.Button(
-                self.frame_categorias_btns,
-                text=categoria["nombre"],
-                command=lambda c=categoria["nombre"]: self.mostrar_productos(c),
-                width=15
-            )
+            # Comportamiento especial para "Otros"
+            if categoria["nombre"].lower() == "personalizados":
+                btn = ttk.Button(
+                    self.frame_categorias_btns,
+                    text=categoria["nombre"],
+                    command=self.mostrar_ventana_producto_personalizado,
+                    width=15
+                )
+            else:
+                btn = ttk.Button(
+                    self.frame_categorias_btns,
+                    text=categoria["nombre"],
+                    command=lambda c=categoria["nombre"]: self.mostrar_productos(c),
+                    width=15
+                )
             btn.grid(row=fila, column=columna, sticky='ew', padx=5, pady=5)
     
     def mostrar_productos(self, categoria_nombre):
@@ -217,3 +226,137 @@ class Seleccion(ttk.Frame):
         busqueda = self.entry_buscador.get().lower()
         print(f"Buscando: {busqueda}")
         # TODO: Implementar lógica de búsqueda
+    
+    def mostrar_ventana_producto_personalizado(self):
+        """Muestra una ventana para crear un producto personalizado"""
+        ventana = tk.Toplevel(self)
+        ventana.title("Producto Personalizado")
+        ventana.geometry("400x300")
+        ventana.resizable(False, False)
+        
+        # Centrar la ventana
+        ventana.transient(self.winfo_toplevel())
+        ventana.grab_set()
+        
+        # Frame principal
+        frame_principal = ttk.Frame(ventana, padding=20)
+        frame_principal.pack(fill='both', expand=True)
+        
+        # Título
+        ttk.Label(
+            frame_principal,
+            text="Producto Personalizado",
+            font=('Arial', 14, 'bold')
+        ).pack(pady=(0, 15))
+        
+        # Campo Nombre
+        frame_nombre = ttk.Frame(frame_principal)
+        frame_nombre.pack(fill='x', pady=5)
+        
+        ttk.Label(frame_nombre, text="Nombre del Producto:", font=('Arial', 9)).pack(anchor='w', pady=(0, 5))
+        entry_nombre = ttk.Entry(frame_nombre, width=40, font=('Arial', 10))
+        entry_nombre.pack(fill='x', pady=(0, 10))
+        entry_nombre.focus()
+        
+        # Campo Precio
+        frame_precio = ttk.Frame(frame_principal)
+        frame_precio.pack(fill='x', pady=5)
+        
+        ttk.Label(frame_precio, text="Precio:", font=('Arial', 9)).pack(anchor='w', pady=(0, 5))
+        entry_precio = ttk.Entry(frame_precio, width=40, font=('Arial', 10))
+        entry_precio.pack(fill='x', pady=(0, 15))
+        
+        # Frame para botones
+        frame_botones = ttk.Frame(frame_principal)
+        frame_botones.pack(pady=10)
+        
+        # Botón Cancelar
+        btn_cancelar = tk.Button(
+            frame_botones,
+            text="Cancelar",
+            command=ventana.destroy,
+            width=15,
+            bg='#e74c3c',
+            fg='white',
+            font=('Arial', 10),
+            relief='flat',
+            cursor='hand2',
+            activebackground='#ec7063',
+            activeforeground='white'
+        )
+        btn_cancelar.pack(side='left', padx=5)
+        
+        # Configurar hover para botón Cancelar
+        def on_enter_cancelar(event):
+            btn_cancelar.config(bg='#ec7063')
+        def on_leave_cancelar(event):
+            btn_cancelar.config(bg='#e74c3c')
+        btn_cancelar.bind('<Enter>', on_enter_cancelar)
+        btn_cancelar.bind('<Leave>', on_leave_cancelar)
+        
+        # Botón Agregar
+        btn_agregar = tk.Button(
+            frame_botones,
+            text="Agregar",
+            command=lambda: self.agregar_producto_personalizado(ventana, entry_nombre.get(), entry_precio.get()),
+            width=15,
+            bg='#27ae60',
+            fg='white',
+            font=('Arial', 10),
+            relief='flat',
+            cursor='hand2',
+            activebackground='#2ecc71',
+            activeforeground='white'
+        )
+        btn_agregar.pack(side='left', padx=5)
+        
+        # Configurar hover para botón Agregar
+        def on_enter_agregar(event):
+            btn_agregar.config(bg='#2ecc71')
+        def on_leave_agregar(event):
+            btn_agregar.config(bg='#27ae60')
+        btn_agregar.bind('<Enter>', on_enter_agregar)
+        btn_agregar.bind('<Leave>', on_leave_agregar)
+        
+        # Centrar la ventana
+        ventana.update_idletasks()
+        x = (ventana.winfo_screenwidth() // 2) - (ventana.winfo_width() // 2)
+        y = (ventana.winfo_screenheight() // 2) - (ventana.winfo_height() // 2)
+        ventana.geometry(f"+{x}+{y}")
+        
+        # Permitir Enter para agregar
+        entry_precio.bind('<Return>', lambda e: self.agregar_producto_personalizado(ventana, entry_nombre.get(), entry_precio.get()))
+    
+    def agregar_producto_personalizado(self, ventana, nombre, precio_str):
+        """Agrega un producto personalizado al carrito"""
+        from tkinter import messagebox
+        
+        # Validar nombre
+        if not nombre or not nombre.strip():
+            messagebox.showwarning("Campo Requerido", "Por favor, ingrese el nombre del producto.")
+            return
+        
+        # Validar precio
+        try:
+            precio = float(precio_str)
+            if precio <= 0:
+                messagebox.showwarning("Precio Inválido", "El precio debe ser mayor a 0.")
+                return
+        except ValueError:
+            messagebox.showwarning("Precio Inválido", "Por favor, ingrese un precio válido.")
+            return
+        
+        # Crear producto personalizado (sin ID, será temporal)
+        producto_personalizado = {
+            'id': -1,  # ID negativo para identificar productos personalizados
+            'nombre': nombre.strip(),
+            'precio': precio,
+            'descripcion': 'Producto personalizado'
+        }
+        
+        # Agregar al carrito
+        if hasattr(self, 'callback_agregar_carrito'):
+            self.callback_agregar_carrito(producto_personalizado)
+            ventana.destroy()
+        else:
+            messagebox.showerror("Error", "No se pudo agregar el producto al carrito.")

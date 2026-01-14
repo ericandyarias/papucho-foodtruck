@@ -39,7 +39,7 @@ class VentanaAdministracion:
         """Crea y configura la ventana de administración"""
         self.ventana = tk.Toplevel(self.parent)
         self.ventana.title("Administración de Productos")
-        self.ventana.geometry("900x600")
+        self.ventana.geometry("1300x600")
         self.ventana.resizable(True, True)
         
         # Centrar la ventana
@@ -127,11 +127,11 @@ class VentanaAdministracion:
         self.tree.heading('Precio', text='Precio')
         self.tree.heading('Descripción', text='Descripción')
         
-        self.tree.column('ID', width=50)
+        self.tree.column('ID', width=0, stretch=False)  # Ocultar columna ID
         self.tree.column('Categoría', width=0, stretch=False)  # Ocultar columna Categoría
-        self.tree.column('Nombre', width=200)
-        self.tree.column('Precio', width=100)
-        self.tree.column('Descripción', width=300)
+        self.tree.column('Nombre', width=250)
+        self.tree.column('Precio', width=120)
+        self.tree.column('Descripción', width=400)
         
         self.tree.grid(row=0, column=0, sticky='nsew')
         self.tree.bind('<<TreeviewSelect>>', self.on_seleccionar_producto)

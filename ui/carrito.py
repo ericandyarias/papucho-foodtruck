@@ -78,6 +78,17 @@ class Carrito(ttk.Frame):
         canvas.bind('<Configure>', ajustar_ancho_frame)
         canvas.configure(yscrollcommand=scrollbar.set)
         
+        # Configurar scroll con rueda del mouse
+        def on_mousewheel(event):
+            canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+        
+        # Vincular el evento de scroll al canvas y al frame
+        canvas.bind_all("<MouseWheel>", on_mousewheel)
+        self.frame_items.bind_all("<MouseWheel>", on_mousewheel)
+        
+        # Guardar referencia al canvas para poder accederlo desde otros métodos
+        self.canvas_carrito = canvas
+        
         canvas.grid(row=0, column=0, sticky='nsew')
         scrollbar.grid(row=0, column=1, sticky='ns')
         
@@ -107,10 +118,12 @@ class Carrito(ttk.Frame):
             frame_botones,
             text="🗑️ Borrar Todo",
             command=self.on_borrar_carrito,
-            font=('Arial', 10),
+            font=('Arial', 12),
             relief='flat',
             cursor='hand2',
-            borderwidth=0
+            borderwidth=0,
+            compound='left',
+            anchor='center'
         )
         self.btn_borrar.grid(row=0, column=0, sticky='ew', padx=5, pady=5)
         
@@ -119,7 +132,7 @@ class Carrito(ttk.Frame):
             frame_botones,
             text="✅ Confirmar Pedido",
             command=self.on_confirmar,
-            font=('Arial', 10),
+            font=('Arial', 12),
             relief='flat',
             cursor='hand2',
             borderwidth=0
@@ -312,7 +325,7 @@ class Carrito(ttk.Frame):
             ttk.Label(
                 info_frame,
                 text=f"${item['producto']['precio']:.2f} x {item['cantidad']} = ${subtotal:.2f}",
-                font=('Arial', 9),
+                font=('Arial', 11),
                 foreground='gray'
             ).grid(row=1, column=0, sticky='w')
             
