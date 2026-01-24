@@ -1,0 +1,212 @@
+{
+  "categorias": [
+    {
+      "nombre": "Hamburguesas",
+      "productos": [
+        {
+          "id": 1,
+          "nombre": "Hamburguesa Completa",
+          "precio": 8800.0,
+          "descripcion": "Tomáte, lechuga, paleta, queso, huevo y fritas."
+        },
+        {
+          "id": 3,
+          "nombre": "Hamburguesa Simple",
+          "precio": 7800.0,
+          "descripcion": "Tomáte, lechuga y fritas."
+        },
+        {
+          "id": 2,
+          "nombre": "Hamburguesa J y Q",
+          "precio": 7800.0,
+          "descripcion": "Jamón, queso y fritas."
+        },
+        {
+          "id": 5,
+          "nombre": "Hamburguesa Doble Cheddar",
+          "precio": 10000.0,
+          "descripcion": "Cheddar y fritas."
+        },
+        {
+          "id": 4,
+          "nombre": "Hamburguesa Cheddar Simple",
+          "precio": 8000.0,
+          "descripcion": "Cheddar y fritas."
+        },
+        {
+          "id": 6,
+          "nombre": "Hamburguesa Triple Cheddar",
+          "precio": 11800.0,
+          "descripcion": "Cheddar y fritas."
+        },
+        {
+          "id": 7,
+          "nombre": "Hamburguesa Completa S/Papas",
+          "precio": 7500.0,
+          "descripcion": "Tomáte, lechuga, paleta, queso y huevo."
+        },
+        {
+          "id": 8,
+          "nombre": "Hamburguesa Simple S/Papas",
+          "precio": 6000.0,
+          "descripcion": "Tomáte y lechuga."
+        },
+        {
+          "id": 9,
+          "nombre": "Hamburguesa J y Q S/Papas",
+          "precio": 6000.0,
+          "descripcion": "Jamón y Queso."
+        }
+      ]
+    },
+    {
+      "nombre": "Lomitos",
+      "productos": [
+        {
+          "id": 10,
+          "nombre": "Lomito Completo",
+          "precio": 9500.0,
+          "descripcion": "Tomáte, lechuga, paleta, queso, huevo y fritas."
+        },
+        {
+          "id": 11,
+          "nombre": "Lomito Simple",
+          "precio": 8800.0,
+          "descripcion": "Tomáte, lechuga y fritas."
+        },
+        {
+          "id": 12,
+          "nombre": "Lomito J y Q",
+          "precio": 8800.0,
+          "descripcion": "Jamón, Queso y fritas."
+        },
+        {
+          "id": 13,
+          "nombre": "Lomito Completo S/Papas",
+          "precio": 8800.0,
+          "descripcion": "Tomáte, lechuga, paleta, queso y huevo."
+        },
+        {
+          "id": 14,
+          "nombre": "Lomito Simple S/Papas",
+          "precio": 7000.0,
+          "descripcion": "Tomáte y lechuga."
+        },
+        {
+          "id": 15,
+          "nombre": "Lomito J y Q S/Papas",
+          "precio": 7000.0,
+          "descripcion": "Jamón y Queso."
+        }
+      ]
+    },
+    {
+      "nombre": "Milanesas",
+      "productos": [
+        {
+          "id": 21,
+          "nombre": "Milanesa Completa",
+          "precio": 9500.0,
+          "descripcion": "Tomáte, lechuga, jamón, queso, huevo y fritas."
+        },
+        {
+          "id": 22,
+          "nombre": "Milanesa Simple",
+          "precio": 8800.0,
+          "descripcion": "Tomáte, lechuga y fritas."
+        },
+        {
+          "id": 23,
+          "nombre": "MIlanesa J y Q",
+          "precio": 8800.0,
+          "descripcion": "Jamón, queso y fritas."
+        },
+        {
+          "id": 24,
+          "nombre": "Milanesa Completo S/Papas",
+          "precio": 8800.0,
+          "descripcion": "Tomáte, lechuga, jamón, queso y huevo."
+        },
+        {
+          "id": 25,
+          "nombre": "Milanesa Simple S/Papas",
+          "precio": 7000.0,
+          "descripcion": "Tomáte y lechuga."
+        },
+        {
+          "id": 26,
+          "nombre": "Milanesa J y Q S/Papas",
+          "precio": 7000.0,
+          "descripcion": "Jamón y Queso."
+        }
+      ]
+    },
+    {
+      "nombre": "Fritas",
+      "productos": [
+        {
+          "id": 16,
+          "nombre": "Papas Fritas Simple",
+          "precio": 3800.0,
+          "descripcion": "Bandeja de papas fritas solas."
+        },
+        {
+          "id": 17,
+          "nombre": "Papas Fritas con Cheddar",
+          "precio": 6500.0,
+          "descripcion": "Bandeja de papas fritas con Cheddar."
+        }
+      ]
+    },
+    {
+      "nombre": "Empanadas",
+      "productos": [
+        {
+          "id": 18,
+          "nombre": "Empanadas (x12)",
+          "precio": 16800.0,
+          "descripcion": "Doce empanadas salteñas."
+        },
+        {
+          "id": 19,
+          "nombre": "Empanadas (x6)",
+          "precio": 9000.0,
+          "descripcion": "Seis empanadas salteñas."
+        },
+        {
+          "id": 20,
+          "nombre": "Empanada (x1)",
+          "precio": 1500.0,
+          "descripcion": "Una empanada salteña."
+        }
+      ]
+    },
+    {
+      "nombre": "Bebidas",
+      "productos": [
+        {
+          "id": 27,
+          "nombre": "Gaseosa Coca, Fanta o Sprite 500ml",
+          "precio": 2500.0,
+          "descripcion": "Gaseosa Coca-cola, Fanta o Sprite de 500ml."
+        },
+        {
+          "id": 28,
+          "nombre": "Gaseosa Coca, Fanta o Sprite 600ml",
+          "precio": 2700.0,
+          "descripcion": "Gaseosa Coca-cola, Fanta o Sprite de 600ml."
+        },
+        {
+          "id": 29,
+          "nombre": "Botella de Agua Sin Gas 500ml",
+          "precio": 800.0,
+          "descripcion": "Botellita de Agua 500ml."
+        }
+      ]
+    },
+    {
+      "nombre": "Personalizados",
+      "productos": []
+    }
+  ]
+}

@@ -11,6 +11,7 @@ import sys
 # Agregar el directorio raíz al path para importar módulos
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from utils.orden import leer_numero_orden, incrementar_orden
+from utils.tickets import generar_tickets_pedido
 
 
 class Carrito(ttk.Frame):
@@ -626,22 +627,34 @@ class Carrito(ttk.Frame):
         print(f"TOTAL: ${total:.2f}")
         print("=" * 50)
         
-        # TODO: Aquí se puede guardar en archivo JSON o base de datos para generar tickets
-        # Por ejemplo: guardar_pedido(pedido_info)
-        
         # Cerrar ventana de confirmación
         ventana.destroy()
         
-        # Mostrar previsualización de tickets
-        self.mostrar_previsualizacion_tickets(pedido_info)
+        # Generar tickets (COCINA y CLIENTE) e imprimir automáticamente
+        try:
+            resultado = generar_tickets_pedido(pedido_info, imprimir_automatico=True)
+            mensaje_tickets = f"\n\nTickets generados exitosamente:\n• {os.path.basename(resultado['cocina'])}\n• {os.path.basename(resultado['cliente'])}"
+            
+            # Informar sobre el estado de la impresión
+            if resultado.get('impresion_cocina') and resultado.get('impresion_cliente'):
+                mensaje_tickets += "\n\n✅ Tickets enviados a la impresora"
+            elif resultado.get('impresion_cocina') or resultado.get('impresion_cliente'):
+                mensaje_tickets += "\n\n⚠ Algunos tickets no se pudieron imprimir"
+            else:
+                mensaje_tickets += "\n\n⚠ No se pudo imprimir (verifique la impresora)"
+        except Exception as e:
+            mensaje_tickets = f"\n\n⚠ Error al generar/imprimir tickets: {str(e)}"
+        
+        # Mostrar previsualización de tickets (TEMPORALMENTE DESHABILITADO PARA PRUEBAS)
+        # self.mostrar_previsualizacion_tickets(pedido_info)
         
         # Mostrar messagebox
         messagebox.showinfo(
             "Pedido Confirmado",
             f"Pedido #{self.numero_orden:04d} confirmado.\n"
             f"Cliente: {nombre_cliente.strip()}\n"
-            f"Total: ${total:.2f}\n\n"
-            f"Previsualización de tickets mostrada."
+            f"Total: ${total:.2f}"
+            f"{mensaje_tickets}"
         )
         
         # Limpiar el carrito

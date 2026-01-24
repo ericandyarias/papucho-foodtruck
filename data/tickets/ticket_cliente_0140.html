@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Ticket CLIENTE #0140</title>
+    <style>
+        @page {
+            size: 80mm auto;
+            margin: 2mm 2mm 2mm 2mm;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Courier New', monospace;
+            font-size: 9pt;
+            line-height: 1.3;
+            width: 100%;
+            padding: 2mm;
+        }
+        .ticket {
+            width: 100%;
+        }
+        .center {
+            text-align: center;
+        }
+        .bold {
+            font-weight: bold;
+        }
+        .separador {
+            border-top: 1px solid #000;
+            margin: 3px 0;
+        }
+        .separador-grueso {
+            border-top: 2px solid #000;
+            margin: 3px 0;
+        }
+        .titulo {
+            font-size: 11pt;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .orden {
+            font-size: 10pt;
+            font-weight: bold;
+            color: #3498db;
+            margin-bottom: 8px;
+        }
+        .item {
+            margin: 8px 0;
+        }
+        .item-nombre {
+            margin-bottom: 2px;
+        }
+        .item-precio {
+            text-align: right;
+            font-weight: bold;
+        }
+        .total {
+            margin-top: 8px;
+            padding-top: 5px;
+        }
+        .total-label {
+            font-weight: bold;
+        }
+        .total-monto {
+            text-align: right;
+            font-weight: bold;
+            font-size: 10pt;
+        }
+        .marca {
+            color: #27ae60;
+            font-weight: bold;
+            font-size: 10pt;
+            margin-top: 8px;
+        }
+        .fecha {
+            font-size: 8pt;
+            color: #666;
+            margin-top: 5px;
+        }
+        .espaciado {
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="ticket">
+        <div class="center titulo">PAPUCHO FOODTRUCK</div>
+        <div class="separador-grueso"></div>
+        <div class="center orden">Orden #0140</div>
+        
+        <div class="espaciado">
+            <strong>Cliente:</strong> messi
+        </div>
+        
+        <div class="separador"></div>
+        <div class="bold espaciado">PEDIDO:</div>
+        
+        <div class="item">
+            <div class="item-nombre">Hamburguesa Completa x1</div>
+            <div class="item-precio">$8800.00</div>
+        </div>
+        
+        <div class="item">
+            <div class="item-nombre">Gaseosa Coca, Fanta o Sprite 500ml x1</div>
+            <div class="item-precio">$2500.00</div>
+        </div>
+        
+        <div class="separador"></div>
+        <div class="total">
+            <div class="total-label">TOTAL A PAGAR:</div>
+            <div class="total-monto">$11300.00</div>
+        </div>
+        <div class="espaciado">
+            <strong>Forma de Pago:</strong> Efectivo
+        </div>
+        
+        <div class="separador-grueso"></div>
+        <div class="center marca">=== CLIENTE ===</div>
+        <div class="center fecha">20/01/2026 02:09</div>
+    </div>
+</body>
+</html>

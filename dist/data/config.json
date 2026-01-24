@@ -1,0 +1,11 @@
+{
+  "impresora": {
+    "ancho_ticket": 80,
+    "modelo": "POS-80",
+    "comentarios": "Para impresoras térmicas de 80mm. Ajustado para usar todo el ancho disponible"
+  },
+  "tickets": {
+    "incluir_fecha_hora": true,
+    "lineas_corte": 3
+  }
+}

@@ -1,0 +1,36 @@
+       PAPUCHO FOODTRUCK        
+
+================================
+          Orden #0121           
+
+Cliente: Eric Andy Arias
+Domicilio: Rivadavia 507
+--------------------------------
+PEDIDO:
+
+Hamburguesa Simple x1
+                        $7800.00
+
+Hamburguesa Completa x2
+                       $17600.00
+
+Hamburguesa J y Q x1
+                        $7800.00
+
+Hamburguesa Doble Cheddar x2
+                       $20000.00
+
+Hamburguesa Cheddar Simple x1
+                        $8000.00
+
+Gaseosa Coca, Fanta o Sprite
+500ml x2
+                        $5000.00
+
+--------------------------------
+TOTAL A PAGAR:
+                       $66200.00
+Forma de Pago: Transferencia
+================================
+        === CLIENTE ===         
+        14/01/2026 15:29        

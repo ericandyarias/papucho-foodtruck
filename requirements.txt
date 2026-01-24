@@ -1,0 +1,6 @@
+# No se requieren dependencias externas
+# La aplicación usa solo librerías estándar de Python:
+# - tkinter (incluido en Python)
+# - json (incluido en Python)
+# - os, sys, datetime (incluido en Python)
+# - subprocess (incluido en Python)
