@@ -209,3 +209,107 @@ def eliminar_producto(producto_id):
                 return True
     
     return False
+
+
+def obtener_ingredientes_producto(producto_id):
+    """Obtiene los ingredientes de un producto. Retorna lista vacía si no tiene ingredientes"""
+    resultado = buscar_producto_por_id(producto_id)
+    if resultado:
+        producto = resultado['producto']
+        # Compatibilidad hacia atrás: si no tiene ingredientes, retornar lista vacía
+        return producto.get("ingredientes", [])
+    return []
+
+
+def agregar_ingrediente_a_producto(producto_id, ingrediente_data):
+    """
+    Agrega un ingrediente a un producto
+    ingrediente_data debe tener: nombre, cantidad_base, precio_extra, precio_resta
+    """
+    data = cargar_productos()
+    
+    for categoria in data.get("categorias", []):
+        for producto in categoria.get("productos", []):
+            if producto.get("id") == producto_id:
+                if "ingredientes" not in producto:
+                    producto["ingredientes"] = []
+                producto["ingredientes"].append(ingrediente_data)
+                guardar_productos(data)
+                return True
+    
+    return False
+
+
+def modificar_ingrediente_producto(producto_id, indice_ingrediente, ingrediente_data):
+    """Modifica un ingrediente específico de un producto"""
+    data = cargar_productos()
+    
+    for categoria in data.get("categorias", []):
+        for producto in categoria.get("productos", []):
+            if producto.get("id") == producto_id:
+                ingredientes = producto.get("ingredientes", [])
+                if 0 <= indice_ingrediente < len(ingredientes):
+                    ingredientes[indice_ingrediente] = ingrediente_data
+                    guardar_productos(data)
+                    return True
+    
+    return False
+
+
+def eliminar_ingrediente_producto(producto_id, indice_ingrediente):
+    """Elimina un ingrediente específico de un producto"""
+    data = cargar_productos()
+    
+    for categoria in data.get("categorias", []):
+        for producto in categoria.get("productos", []):
+            if producto.get("id") == producto_id:
+                ingredientes = producto.get("ingredientes", [])
+                if 0 <= indice_ingrediente < len(ingredientes):
+                    ingredientes.pop(indice_ingrediente)
+                    guardar_productos(data)
+                    return True
+    
+    return False
+
+
+def calcular_precio_con_ingredientes(producto, modificaciones_ingredientes=None):
+    """
+    Calcula el precio final de un producto considerando modificaciones de ingredientes
+    
+    Args:
+        producto: Diccionario del producto con precio base y opcionalmente ingredientes
+        modificaciones_ingredientes: Dict con {nombre_ingrediente: cantidad_modificada}
+                                    donde cantidad_modificada puede ser positiva (extra) o negativa (quitar)
+    
+    Returns:
+        float: Precio final calculado
+    """
+    precio_base = producto.get("precio", 0.0)
+    ingredientes = producto.get("ingredientes", [])
+    
+    # Si no hay ingredientes o modificaciones, retornar precio base
+    if not ingredientes or not modificaciones_ingredientes:
+        return precio_base
+    
+    ajuste_total = 0.0
+    
+    for ingrediente in ingredientes:
+        nombre = ingrediente.get("nombre", "")
+        cantidad_base = ingrediente.get("cantidad_base", 1)
+        precio_extra = ingrediente.get("precio_extra", 0.0)
+        precio_resta = ingrediente.get("precio_resta", 0.0)
+        
+        # Obtener cantidad modificada (usar cantidad_base si no se modificó)
+        cantidad_modificada = modificaciones_ingredientes.get(nombre, cantidad_base)
+        
+        if cantidad_modificada > cantidad_base:
+            # Se agregaron extras
+            extras = cantidad_modificada - cantidad_base
+            ajuste_total += extras * precio_extra
+        elif cantidad_modificada < cantidad_base:
+            # Se quitaron unidades
+            quitados = cantidad_base - cantidad_modificada
+            ajuste_total -= quitados * precio_resta
+        # Si cantidad_modificada == cantidad_base, no hay ajuste (ya está incluido en el precio base)
+    
+    return precio_base + ajuste_total

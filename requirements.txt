@@ -1,6 +1,10 @@
-# No se requieren dependencias externas
-# La aplicación usa solo librerías estándar de Python:
-# - tkinter (incluido en Python)
-# - json (incluido en Python)
-# - os, sys, datetime (incluido en Python)
-# - subprocess (incluido en Python)
+# Dependencias del proyecto
+python-escpos>=3.1
+
+# Nota: python-escpos requiere:
+# - Pillow (instalado automáticamente)
+# - PyYAML (instalado automáticamente)
+# - Otras dependencias (instaladas automáticamente)
+
+# Para detección automática de impresoras USB (opcional):
+# pyusb>=1.0.0  # Descomentar si necesitas detección avanzada de impresoras

@@ -49,9 +49,14 @@ class Navegador(ttk.Frame):
         ttk.Label(self, text="").pack(expand=True)
     
     def on_pedidos_click(self):
-        """Callback cuando se hace clic en Pedidos"""
-        print("Navegando a: Pedidos")
-        # TODO: Implementar lógica de navegación
+        """
+        Callback cuando se hace clic en Pedidos
+        Nota: Actualmente la vista de pedidos es la vista principal
+        Este botón está disponible para futuras funcionalidades
+        """
+        # La vista principal ya muestra los pedidos
+        # Este método puede ser extendido para navegación futura
+        pass
     
     def on_administracion_click(self):
         """Callback cuando se hace clic en Administración"""

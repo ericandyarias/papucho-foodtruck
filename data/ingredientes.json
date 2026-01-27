@@ -1,0 +1,44 @@
+{
+  "ingredientes": [
+    {
+      "id": 1,
+      "nombre": "Tomáte",
+      "categorias": [
+        "Hamburguesas",
+        "Lomitos",
+        "Milanesas"
+      ],
+      "precio_extra": 500.0,
+      "precio_resta": 400.0
+    },
+    {
+      "id": 2,
+      "nombre": "Lechuga",
+      "categorias": [
+        "Hamburguesas",
+        "Lomitos",
+        "Milanesas"
+      ],
+      "precio_extra": 500.0,
+      "precio_resta": 500.0
+    },
+    {
+      "id": 3,
+      "nombre": "Medallón",
+      "categorias": [
+        "Hamburguesas"
+      ],
+      "precio_extra": 900.0,
+      "precio_resta": 900.0
+    },
+    {
+      "id": 4,
+      "nombre": "Pepinillos",
+      "categorias": [
+        "Hamburguesas"
+      ],
+      "precio_extra": 500.0,
+      "precio_resta": 500.0
+    }
+  ]
+}

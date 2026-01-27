@@ -7,13 +7,53 @@
           "id": 1,
           "nombre": "Hamburguesa Completa",
           "precio": 8800.0,
-          "descripcion": "Tomáte, lechuga, paleta, queso, huevo y fritas."
+          "descripcion": "Tomáte, lechuga, paleta, queso, huevo y fritas.",
+          "ingredientes": [
+            {
+              "nombre": "Tomáte",
+              "cantidad_base": 1,
+              "precio_extra": 500.0,
+              "precio_resta": 400.0
+            },
+            {
+              "nombre": "Medallón",
+              "cantidad_base": 1,
+              "precio_extra": 900.0,
+              "precio_resta": 900.0
+            },
+            {
+              "nombre": "Lechuga",
+              "cantidad_base": 1,
+              "precio_extra": 500.0,
+              "precio_resta": 500.0
+            },
+            {
+              "nombre": "Pepinillos",
+              "cantidad_base": 1,
+              "precio_extra": 500.0,
+              "precio_resta": 500.0
+            }
+          ]
         },
         {
           "id": 3,
           "nombre": "Hamburguesa Simple",
           "precio": 7800.0,
-          "descripcion": "Tomáte, lechuga y fritas."
+          "descripcion": "Tomáte, lechuga y fritas.",
+          "ingredientes": [
+            {
+              "nombre": "Tomáte",
+              "cantidad_base": 1,
+              "precio_extra": 500.0,
+              "precio_resta": 400.0
+            },
+            {
+              "nombre": "Lechuga",
+              "cantidad_base": 1,
+              "precio_extra": 500.0,
+              "precio_resta": 500.0
+            }
+          ]
         },
         {
           "id": 2,
@@ -66,7 +106,15 @@
           "id": 10,
           "nombre": "Lomito Completo",
           "precio": 9500.0,
-          "descripcion": "Tomáte, lechuga, paleta, queso, huevo y fritas."
+          "descripcion": "Tomáte, lechuga, paleta, queso, huevo y fritas.",
+          "ingredientes": [
+            {
+              "nombre": "Tomáte",
+              "cantidad_base": 1,
+              "precio_extra": 500.0,
+              "precio_resta": 400.0
+            }
+          ]
         },
         {
           "id": 11,

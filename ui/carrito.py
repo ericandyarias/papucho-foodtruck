@@ -12,6 +12,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from utils.orden import leer_numero_orden, incrementar_orden
 from utils.tickets import generar_tickets_pedido
+from utils.productos import calcular_precio_con_ingredientes
 
 
 class Carrito(ttk.Frame):
@@ -174,10 +175,30 @@ class Carrito(ttk.Frame):
                 self.actualizar_vista()
                 return
         
-        # Si no existe, agregarlo
+        # Recargar el producto desde el JSON para obtener la versión más actualizada con ingredientes
+        from utils.productos import buscar_producto_por_id
+        resultado = buscar_producto_por_id(producto['id'])
+        if resultado:
+            # Usar el producto actualizado del JSON
+            producto = resultado['producto'].copy()
+            producto['categoria'] = resultado.get('categoria', '')
+        else:
+            # Si no se encuentra, usar el producto original pero asegurar que tenga categoría
+            if 'categoria' not in producto:
+                producto['categoria'] = ''
+        
+        # Inicializar modificaciones_ingredientes: dict con {nombre_ingrediente: cantidad_actual}
+        modificaciones_ingredientes = {}
+        ingredientes = producto.get("ingredientes", [])
+        for ingrediente in ingredientes:
+            nombre = ingrediente.get("nombre", "")
+            cantidad_base = ingrediente.get("cantidad_base", 1)
+            modificaciones_ingredientes[nombre] = cantidad_base
+        
         self.items.append({
             'producto': producto,
-            'cantidad': cantidad
+            'cantidad': cantidad,
+            'modificaciones_ingredientes': modificaciones_ingredientes
         })
         self.actualizar_vista()
     
@@ -198,10 +219,16 @@ class Carrito(ttk.Frame):
         self.actualizar_vista()
     
     def calcular_total(self):
-        """Calcula el total del carrito"""
+        """Calcula el total del carrito considerando modificaciones de ingredientes"""
         total = 0
         for item in self.items:
-            total += item['producto']['precio'] * item['cantidad']
+            producto = item['producto']
+            cantidad = item['cantidad']
+            modificaciones = item.get('modificaciones_ingredientes', {})
+            
+            # Calcular precio unitario con ingredientes
+            precio_unitario = calcular_precio_con_ingredientes(producto, modificaciones)
+            total += precio_unitario * cantidad
         return total
     
     def actualizar_estilo_boton_confirmar(self):
@@ -322,13 +349,27 @@ class Carrito(ttk.Frame):
                 font=('Arial', 10, 'bold')
             ).grid(row=0, column=0, sticky='w')
             
-            subtotal = item['producto']['precio'] * item['cantidad']
-            ttk.Label(
-                info_frame,
-                text=f"${item['producto']['precio']:.2f} x {item['cantidad']} = ${subtotal:.2f}",
-                font=('Arial', 11),
-                foreground='gray'
-            ).grid(row=1, column=0, sticky='w')
+            # Calcular precio unitario y subtotal considerando ingredientes
+            modificaciones = item.get('modificaciones_ingredientes', {})
+            precio_unitario = calcular_precio_con_ingredientes(item['producto'], modificaciones)
+            subtotal = precio_unitario * item['cantidad']
+            
+            # Mostrar precio base y ajustes si hay modificaciones
+            precio_base = item['producto']['precio']
+            if precio_unitario != precio_base:
+                ttk.Label(
+                    info_frame,
+                    text=f"Base: ${precio_base:.2f} → ${precio_unitario:.2f} x {item['cantidad']} = ${subtotal:.2f}",
+                    font=('Arial', 9),
+                    foreground='#e67e22'
+                ).grid(row=1, column=0, sticky='w')
+            else:
+                ttk.Label(
+                    info_frame,
+                    text=f"${precio_unitario:.2f} x {item['cantidad']} = ${subtotal:.2f}",
+                    font=('Arial', 11),
+                    foreground='gray'
+                ).grid(row=1, column=0, sticky='w')
             
             # Controles de cantidad
             controles_frame = ttk.Frame(frame_item)
@@ -358,6 +399,32 @@ class Carrito(ttk.Frame):
                             break
                 return callback
             
+            # Botón editar ingredientes (a la izquierda del botón menos)
+            # SOLO mostrar el botón si el producto tiene ingredientes definidos
+            ingredientes = item['producto'].get('ingredientes', [])
+            
+            # Obtener categoría del producto si no está en el item (para uso futuro)
+            categoria = item['producto'].get('categoria', '')
+            if not categoria:
+                # Buscar la categoría del producto
+                from utils.productos import buscar_producto_por_id
+                resultado = buscar_producto_por_id(producto_id)
+                if resultado:
+                    categoria = resultado.get('categoria', '')
+                    item['producto']['categoria'] = categoria
+            
+            # SOLO mostrar botón si tiene ingredientes (sin lógica hardcodeada)
+            columna_actual = 0
+            if ingredientes and len(ingredientes) > 0:
+                btn_editar = ttk.Button(
+                    controles_frame,
+                    text="✏️",
+                    width=3,
+                    command=lambda pid=producto_id: self.editar_ingredientes(pid)
+                )
+                btn_editar.grid(row=0, column=columna_actual, padx=2)
+                columna_actual += 1
+            
             # Botón menos
             btn_menos = ttk.Button(
                 controles_frame,
@@ -365,13 +432,15 @@ class Carrito(ttk.Frame):
                 width=3,
                 command=crear_callback_menos(producto_id)
             )
-            btn_menos.grid(row=0, column=0, padx=2)
+            btn_menos.grid(row=0, column=columna_actual, padx=2)
+            columna_actual += 1
             
             ttk.Label(
                 controles_frame,
                 text=str(item['cantidad']),
                 width=3
-            ).grid(row=0, column=1, padx=2)
+            ).grid(row=0, column=columna_actual, padx=2)
+            columna_actual += 1
             
             # Botón más
             btn_mas = ttk.Button(
@@ -380,7 +449,8 @@ class Carrito(ttk.Frame):
                 width=3,
                 command=crear_callback_mas(producto_id)
             )
-            btn_mas.grid(row=0, column=2, padx=2)
+            btn_mas.grid(row=0, column=columna_actual, padx=2)
+            columna_actual += 1
             
             # Botón eliminar
             btn_eliminar = ttk.Button(
@@ -389,7 +459,7 @@ class Carrito(ttk.Frame):
                 width=3,
                 command=lambda pid=producto_id: self.eliminar_item(pid)
             )
-            btn_eliminar.grid(row=0, column=3, padx=2)
+            btn_eliminar.grid(row=0, column=columna_actual, padx=2)
         
         # Actualizar total
         total = self.calcular_total()
@@ -399,6 +469,337 @@ class Carrito(ttk.Frame):
         # Actualizar estilos de los botones cuando hay contenido
         self.actualizar_estilo_boton_confirmar()
         self.actualizar_estilo_boton_borrar()
+    
+    def editar_ingredientes(self, producto_id):
+        """Abre una ventana para editar los ingredientes de un producto"""
+        # Buscar el item en el carrito
+        item = None
+        for it in self.items:
+            if it['producto']['id'] == producto_id:
+                item = it
+                break
+        
+        if not item:
+            return
+        
+        # Recargar el producto desde el JSON para obtener ingredientes actualizados
+        from utils.productos import buscar_producto_por_id
+        resultado = buscar_producto_por_id(producto_id)
+        if resultado:
+            # Actualizar el producto en el item con la versión más reciente
+            producto_actualizado = resultado['producto']
+            item['producto'] = producto_actualizado
+            # Si hay nuevos ingredientes, inicializar sus modificaciones
+            modificaciones = item.get('modificaciones_ingredientes', {})
+            ingredientes_actuales = producto_actualizado.get('ingredientes', [])
+            for ingrediente in ingredientes_actuales:
+                nombre = ingrediente.get('nombre', '')
+                if nombre not in modificaciones:
+                    # Inicializar con cantidad_base si es un ingrediente nuevo
+                    modificaciones[nombre] = ingrediente.get('cantidad_base', 1)
+            item['modificaciones_ingredientes'] = modificaciones
+        
+        producto = item['producto']
+        ingredientes = producto.get('ingredientes', [])
+        
+        if not ingredientes or len(ingredientes) == 0:
+            mensaje = "Este producto no tiene ingredientes configurables.\n\n"
+            mensaje += "Para agregar ingredientes a este producto:\n"
+            mensaje += "1. Ve al panel de Administración\n"
+            mensaje += "2. Selecciona el producto en la pestaña 'Productos'\n"
+            mensaje += "3. Asigna ingredientes al producto desde el formulario"
+            messagebox.showinfo("Sin Ingredientes", mensaje)
+            return
+        
+        # Crear ventana modal
+        ventana = tk.Toplevel(self)
+        ventana.title(f"Editar Ingredientes - {producto['nombre']}")
+        ventana.geometry("550x650")
+        ventana.resizable(True, True)
+        ventana.transient(self.winfo_toplevel())
+        ventana.grab_set()
+        
+        # Frame principal
+        frame_principal = ttk.Frame(ventana, padding=20)
+        frame_principal.pack(fill='both', expand=True)
+        frame_principal.columnconfigure(0, weight=1)
+        frame_principal.rowconfigure(2, weight=1)  # Área de ingredientes expandible
+        
+        # Título
+        ttk.Label(
+            frame_principal,
+            text=f"Editar Ingredientes",
+            font=('Arial', 14, 'bold')
+        ).grid(row=0, column=0, pady=(0, 5))
+        
+        ttk.Label(
+            frame_principal,
+            text=producto['nombre'],
+            font=('Arial', 12),
+            foreground='gray'
+        ).grid(row=1, column=0, pady=(0, 10))
+        
+        # Frame para ingredientes con scroll
+        frame_scroll = ttk.Frame(frame_principal)
+        frame_scroll.grid(row=1, column=0, sticky='nsew', pady=10)
+        frame_scroll.columnconfigure(0, weight=1)
+        frame_scroll.rowconfigure(0, weight=1)
+        
+        canvas_frame = tk.Canvas(frame_scroll)
+        scrollbar = ttk.Scrollbar(frame_scroll, orient="vertical", command=canvas_frame.yview)
+        frame_ingredientes = ttk.Frame(canvas_frame)
+        
+        frame_ingredientes.bind(
+            "<Configure>",
+            lambda e: canvas_frame.configure(scrollregion=canvas_frame.bbox("all"))
+        )
+        
+        canvas_window = canvas_frame.create_window((0, 0), window=frame_ingredientes, anchor="nw")
+        
+        def ajustar_ancho_frame(event):
+            canvas_width = event.width
+            canvas_frame.itemconfig(canvas_window, width=canvas_width)
+        
+        canvas_frame.bind('<Configure>', ajustar_ancho_frame)
+        canvas_frame.configure(yscrollcommand=scrollbar.set)
+        
+        canvas_frame.grid(row=0, column=0, sticky='nsew')
+        scrollbar.grid(row=0, column=1, sticky='ns')
+        
+        # Variables para almacenar las cantidades actuales
+        variables_cantidad = {}
+        modificaciones_actuales = item.get('modificaciones_ingredientes', {}).copy()
+        
+        # Frame para precio total (definir antes del loop para que esté disponible)
+        frame_precio_total = ttk.Frame(frame_principal)
+        frame_precio_total.grid(row=2, column=0, sticky='ew', pady=10)
+        
+        ttk.Separator(frame_precio_total, orient='horizontal').pack(fill='x', pady=5)
+        
+        label_precio_base = ttk.Label(
+            frame_precio_total,
+            text=f"Precio base: ${producto['precio']:.2f}",
+            font=('Arial', 10)
+        )
+        label_precio_base.pack()
+        
+        label_precio_final = ttk.Label(
+            frame_precio_total,
+            text="",
+            font=('Arial', 12, 'bold'),
+            foreground='#27ae60'
+        )
+        label_precio_final.pack()
+        
+        # Función para calcular precio total (definir antes del loop para que esté disponible)
+        def actualizar_precio_total():
+            # Calcular precio manualmente considerando cada ingrediente por separado
+            precio_base = producto.get('precio', 0.0)
+            ajuste_total = 0.0
+            
+            for idx_var, var in variables_cantidad.items():
+                if isinstance(idx_var, int) and idx_var < len(ingredientes):
+                    ingrediente = ingredientes[idx_var]
+                    cantidad_base = ingrediente.get('cantidad_base', 1)
+                    precio_extra = ingrediente.get('precio_extra', 0.0)
+                    precio_resta = ingrediente.get('precio_resta', 0.0)
+                    cantidad_actual = var.get()
+                    
+                    if cantidad_actual > cantidad_base:
+                        extras = cantidad_actual - cantidad_base
+                        ajuste_total += extras * precio_extra
+                    elif cantidad_actual < cantidad_base:
+                        quitados = cantidad_base - cantidad_actual
+                        ajuste_total -= quitados * precio_resta
+            
+            precio_final = precio_base + ajuste_total
+            ajuste = precio_final - precio_base
+            
+            if ajuste != 0:
+                signo = "+" if ajuste > 0 else ""
+                label_precio_final.config(
+                    text=f"Precio final: ${precio_final:.2f} ({signo}${ajuste:.2f})"
+                )
+            else:
+                label_precio_final.config(text=f"Precio final: ${precio_final:.2f}")
+        
+        # Debug: verificar ingredientes
+        print(f"DEBUG: Producto {producto['nombre']} tiene {len(ingredientes)} ingredientes")
+        for ing in ingredientes:
+            print(f"  - {ing.get('nombre', 'SIN NOMBRE')}")
+        
+        # Mostrar cada ingrediente
+        if not ingredientes:
+            # Si no hay ingredientes, mostrar mensaje
+            ttk.Label(
+                frame_ingredientes,
+                text="Este producto no tiene ingredientes configurables.",
+                font=('Arial', 10),
+                foreground='gray'
+            ).grid(row=0, column=0, padx=20, pady=20)
+        
+        for idx, ingrediente in enumerate(ingredientes):
+            nombre = ingrediente.get('nombre', '')
+            cantidad_base = ingrediente.get('cantidad_base', 1)
+            precio_extra = ingrediente.get('precio_extra', 0.0)
+            precio_resta = ingrediente.get('precio_resta', 0.0)
+            
+            # Obtener cantidad actual (o base si no hay modificación)
+            cantidad_actual = modificaciones_actuales.get(nombre, cantidad_base)
+            
+            # Frame para cada ingrediente
+            frame_ing = ttk.LabelFrame(frame_ingredientes, text=nombre, padding=10)
+            frame_ing.grid(row=idx, column=0, sticky='ew', padx=5, pady=5)
+            frame_ing.columnconfigure(1, weight=1)
+            
+            # Variable para la cantidad (usar índice para manejar duplicados)
+            var_cantidad = tk.IntVar(value=cantidad_actual)
+            # Usar índice como clave para evitar conflictos con ingredientes duplicados
+            variables_cantidad[idx] = var_cantidad
+            
+            # Label cantidad
+            ttk.Label(frame_ing, text="Cantidad:").grid(row=0, column=0, padx=5, sticky='w')
+            
+            # Frame para controles de cantidad
+            frame_controles = ttk.Frame(frame_ing)
+            frame_controles.grid(row=0, column=1, sticky='ew', padx=5)
+            
+            # Botón menos
+            btn_menos = ttk.Button(
+                frame_controles,
+                text="-",
+                width=3,
+                command=lambda n=nombre, v=var_cantidad: v.set(max(0, v.get() - 1))
+            )
+            btn_menos.pack(side='left', padx=2)
+            
+            # Label cantidad actual
+            label_cantidad = ttk.Label(frame_controles, textvariable=var_cantidad, width=5)
+            label_cantidad.pack(side='left', padx=5)
+            
+            # Botón más
+            btn_mas = ttk.Button(
+                frame_controles,
+                text="+",
+                width=3,
+                command=lambda n=nombre, v=var_cantidad: v.set(v.get() + 1)
+            )
+            btn_mas.pack(side='left', padx=2)
+            
+            # Información de precios (cambiar gris a negro)
+            info_text = f"Base: {cantidad_base}"
+            if precio_extra > 0:
+                info_text += f" | Extra: +${precio_extra:.2f}"
+            if precio_resta > 0:
+                info_text += f" | Quitar: -${precio_resta:.2f}"
+            
+            ttk.Label(
+                frame_ing,
+                text=info_text,
+                font=('Arial', 8),
+                foreground='black'
+            ).grid(row=1, column=0, columnspan=2, sticky='w', padx=5, pady=2)
+            
+            # Función para actualizar impacto en precio
+            def actualizar_impacto(nombre_ing, var, cantidad_base, precio_extra, precio_resta):
+                cantidad = var.get()
+                if cantidad > cantidad_base:
+                    impacto = (cantidad - cantidad_base) * precio_extra
+                    return f"+${impacto:.2f}"
+                elif cantidad < cantidad_base:
+                    impacto = (cantidad_base - cantidad) * precio_resta
+                    return f"-${impacto:.2f}"
+                else:
+                    return "$0.00"
+            
+            # Label impacto en precio
+            label_impacto = ttk.Label(frame_ing, text="", font=('Arial', 9, 'bold'))
+            label_impacto.grid(row=2, column=0, columnspan=2, sticky='w', padx=5, pady=2)
+            
+            def actualizar_impacto_ui():
+                impacto = actualizar_impacto(nombre, var_cantidad, cantidad_base, precio_extra, precio_resta)
+                if impacto != "$0.00":
+                    label_impacto.config(text=f"Impacto: {impacto}", foreground='#e67e22')
+                else:
+                    label_impacto.config(text="", foreground='gray')
+                # Actualizar precio total en tiempo real
+                actualizar_precio_total()
+            
+            var_cantidad.trace('w', lambda *args: actualizar_impacto_ui())
+            actualizar_impacto_ui()
+        
+        # Asegurar que el frame_ingredientes tenga el ancho correcto
+        frame_ingredientes.update_idletasks()
+        canvas_frame.update_idletasks()
+        
+        # Inicializar precio total al abrir la ventana
+        actualizar_precio_total()
+        
+        # Frame para botones
+        frame_botones = ttk.Frame(frame_principal)
+        frame_botones.grid(row=4, column=0, pady=15, sticky='ew')
+        frame_botones.columnconfigure(0, weight=1)
+        frame_botones.columnconfigure(1, weight=1)
+        
+        # Botón Cancelar
+        btn_cancelar = tk.Button(
+            frame_botones,
+            text="❌ Cancelar",
+            command=ventana.destroy,
+            width=18,
+            bg='#95a5a6',
+            fg='white',
+            font=('Arial', 10, 'bold'),
+            relief='flat',
+            cursor='hand2',
+            activebackground='#7f8c8d',
+            activeforeground='white'
+        )
+        btn_cancelar.grid(row=0, column=0, padx=5, sticky='ew')
+        
+        # Botón Guardar/Aceptar
+        def guardar_modificaciones():
+            # Convertir modificaciones a formato por nombre (sumando duplicados)
+            modificaciones_por_nombre = {}
+            
+            for idx_var, var in variables_cantidad.items():
+                if isinstance(idx_var, int) and idx_var < len(ingredientes):
+                    ingrediente = ingredientes[idx_var]
+                    nombre = ingrediente.get('nombre', '')
+                    cantidad_base = ingrediente.get('cantidad_base', 1)
+                    cantidad_actual = var.get()
+                    
+                    if nombre in modificaciones_por_nombre:
+                        diferencia_anterior = modificaciones_por_nombre[nombre] - cantidad_base
+                        diferencia_nueva = cantidad_actual - cantidad_base
+                        modificaciones_por_nombre[nombre] = cantidad_base + diferencia_anterior + diferencia_nueva
+                    else:
+                        modificaciones_por_nombre[nombre] = cantidad_actual
+            
+            item['modificaciones_ingredientes'] = modificaciones_por_nombre
+            self.actualizar_vista()
+            ventana.destroy()
+        
+        btn_guardar = tk.Button(
+            frame_botones,
+            text="✅ Aceptar",
+            command=guardar_modificaciones,
+            width=18,
+            bg='#27ae60',
+            fg='white',
+            font=('Arial', 10, 'bold'),
+            relief='flat',
+            cursor='hand2',
+            activebackground='#2ecc71',
+            activeforeground='white'
+        )
+        btn_guardar.grid(row=0, column=1, padx=5, sticky='ew')
+        
+        # Centrar ventana
+        ventana.update_idletasks()
+        x = (ventana.winfo_screenwidth() // 2) - (ventana.winfo_width() // 2)
+        y = (ventana.winfo_screenheight() // 2) - (ventana.winfo_height() // 2)
+        ventana.geometry(f"+{x}+{y}")
     
     def on_confirmar(self):
         """Callback cuando se confirma el pedido"""
@@ -609,31 +1010,19 @@ class Carrito(ttk.Frame):
             'total': total
         }
         
-        # Imprimir información del pedido (para depuración y futura implementación de tickets)
-        print("=" * 50)
-        print(f"PEDIDO #{self.numero_orden:04d} CONFIRMADO")
-        print("=" * 50)
-        print(f"Cliente: {pedido_info['nombre_cliente']}")
-        print(f"Tipo: {tipo_pedido}")
-        if pedido_info['domicilio']:
-            print(f"Domicilio: {pedido_info['domicilio']}")
-        print(f"Forma de Pago: {forma_pago}")
-        print("-" * 50)
-        print("Items:")
-        for item in pedido_info['items']:
-            subtotal = item['producto']['precio'] * item['cantidad']
-            print(f"  - {item['producto']['nombre']} x{item['cantidad']} = ${subtotal:.2f}")
-        print("-" * 50)
-        print(f"TOTAL: ${total:.2f}")
-        print("=" * 50)
-        
         # Cerrar ventana de confirmación
         ventana.destroy()
         
         # Generar tickets (COCINA y CLIENTE) e imprimir automáticamente
+        # Los tickets se imprimen directamente usando Win32Raw sin previsualización
         try:
-            resultado = generar_tickets_pedido(pedido_info, imprimir_automatico=True)
-            mensaje_tickets = f"\n\nTickets generados exitosamente:\n• {os.path.basename(resultado['cocina'])}\n• {os.path.basename(resultado['cliente'])}"
+            resultado = generar_tickets_pedido(pedido_info, imprimir_automatico=True, guardar_respaldo=True)
+            
+            # Construir mensaje sobre tickets generados
+            if resultado.get('cocina') and resultado.get('cliente'):
+                mensaje_tickets = f"\n\nTickets generados:\n• {os.path.basename(resultado['cocina'])}\n• {os.path.basename(resultado['cliente'])}"
+            else:
+                mensaje_tickets = "\n\nTickets generados"
             
             # Informar sobre el estado de la impresión
             if resultado.get('impresion_cocina') and resultado.get('impresion_cliente'):
@@ -644,9 +1033,6 @@ class Carrito(ttk.Frame):
                 mensaje_tickets += "\n\n⚠ No se pudo imprimir (verifique la impresora)"
         except Exception as e:
             mensaje_tickets = f"\n\n⚠ Error al generar/imprimir tickets: {str(e)}"
-        
-        # Mostrar previsualización de tickets (TEMPORALMENTE DESHABILITADO PARA PRUEBAS)
-        # self.mostrar_previsualizacion_tickets(pedido_info)
         
         # Mostrar messagebox
         messagebox.showinfo(
@@ -765,264 +1151,6 @@ class Carrito(ttk.Frame):
         x = (ventana.winfo_screenwidth() // 2) - (ventana.winfo_width() // 2)
         y = (ventana.winfo_screenheight() // 2) - (ventana.winfo_height() // 2)
         ventana.geometry(f"+{x}+{y}")
-    
-    def mostrar_previsualizacion_tickets(self, pedido_info):
-        """Muestra una previsualización de los tickets (cocina y cliente)"""
-        ventana_tickets = tk.Toplevel(self)
-        ventana_tickets.title("Previsualización de Tickets")
-        ventana_tickets.geometry("700x900")
-        ventana_tickets.resizable(True, True)
-        
-        # Centrar la ventana
-        ventana_tickets.transient(self.winfo_toplevel())
-        
-        # Frame principal con scroll
-        frame_principal = ttk.Frame(ventana_tickets, padding=20)
-        frame_principal.pack(fill='both', expand=True)
-        
-        # Título de la ventana
-        ttk.Label(
-            frame_principal,
-            text="Previsualización de Tickets (8 cm de ancho)",
-            font=('Arial', 12, 'bold')
-        ).pack(pady=(0, 20))
-        
-        # Frame para los dos tickets lado a lado
-        frame_tickets = tk.Frame(frame_principal, bg='lightgray')
-        frame_tickets.pack(fill='both', expand=True, pady=10)
-        
-        # Ancho del ticket: 8 cm (para impresora térmica de 80mm)
-        # 8 cm = aproximadamente 302 píxeles a 96 DPI
-        ancho_ticket = 302
-        
-        # Frame para centrar los tickets (usando grid)
-        frame_centro = tk.Frame(frame_tickets, bg='lightgray')
-        frame_centro.pack(expand=True)
-        frame_centro.grid_columnconfigure(0, weight=1)
-        frame_centro.grid_columnconfigure(1, weight=1)
-        
-        # Ticket para COCINA
-        self.crear_ticket_preview(
-            frame_centro,
-            pedido_info,
-            "COCINA",
-            ancho_ticket,
-            columna=0
-        )
-        
-        # Ticket para CLIENTE
-        self.crear_ticket_preview(
-            frame_centro,
-            pedido_info,
-            "CLIENTE",
-            ancho_ticket,
-            columna=1
-        )
-        
-        # Botón cerrar
-        frame_botones = ttk.Frame(frame_principal)
-        frame_botones.pack(pady=20)
-        
-        btn_cerrar = tk.Button(
-            frame_botones,
-            text="Cerrar",
-            command=ventana_tickets.destroy,
-            width=20,
-            bg='#95a5a6',
-            fg='white',
-            font=('Arial', 10),
-            relief='flat',
-            cursor='hand2',
-            activebackground='#7f8c8d',
-            activeforeground='white'
-        )
-        btn_cerrar.pack()
-        
-        # Configurar hover para botón cerrar
-        def on_enter_cerrar(event):
-            btn_cerrar.config(bg='#bdc3c7')
-        def on_leave_cerrar(event):
-            btn_cerrar.config(bg='#95a5a6')
-        btn_cerrar.bind('<Enter>', on_enter_cerrar)
-        btn_cerrar.bind('<Leave>', on_leave_cerrar)
-        
-        # Centrar la ventana
-        ventana_tickets.update_idletasks()
-        x = (ventana_tickets.winfo_screenwidth() // 2) - (ventana_tickets.winfo_width() // 2)
-        y = (ventana_tickets.winfo_screenheight() // 2) - (ventana_tickets.winfo_height() // 2)
-        ventana_tickets.geometry(f"+{x}+{y}")
-    
-    def crear_ticket_preview(self, parent, pedido_info, tipo_ticket, ancho, columna):
-        """Crea la previsualización de un ticket individual"""
-        # Frame del ticket con borde
-        frame_ticket = tk.Frame(
-            parent,
-            relief='solid',
-            borderwidth=2,
-            bg='white'
-        )
-        frame_ticket.grid(row=0, column=columna, padx=10, pady=10, sticky='n')
-        
-        # Frame interno con padding reducido para 8 cm
-        frame_contenido = tk.Frame(frame_ticket, bg='white', padx=8, pady=8, width=ancho-16)
-        frame_contenido.pack(fill='both', expand=True)
-        
-        # Configurar ancho mínimo del frame_ticket
-        frame_ticket.config(width=ancho)
-        
-        # Título del puesto (centrado, fuente más pequeña)
-        label_titulo = tk.Label(
-            frame_contenido,
-            text="PAPUCHO FOODTRUCK",
-            font=('Arial', 11, 'bold'),
-            bg='white',
-            fg='#2c3e50'
-        )
-        label_titulo.pack(pady=(0, 5))
-        
-        # Separador
-        tk.Frame(frame_contenido, height=1, bg='#2c3e50').pack(fill='x', pady=(0, 8))
-        
-        # Número de orden (centrado, fuente más pequeña)
-        label_orden = tk.Label(
-            frame_contenido,
-            text=f"Orden #{pedido_info['numero']:04d}",
-            font=('Arial', 10, 'bold'),
-            bg='white',
-            fg='#3498db'
-        )
-        label_orden.pack(pady=(0, 5))
-        
-        # Cliente
-        frame_cliente = tk.Frame(frame_contenido, bg='white')
-        frame_cliente.pack(fill='x', pady=(0, 4))
-        
-        tk.Label(
-            frame_cliente,
-            text="Cliente:",
-            font=('Arial', 8, 'bold'),
-            bg='white',
-            anchor='w'
-        ).pack(side='left')
-        
-        tk.Label(
-            frame_cliente,
-            text=pedido_info['nombre_cliente'],
-            font=('Arial', 8),
-            bg='white',
-            anchor='w'
-        ).pack(side='left', padx=(3, 0))
-        
-        # Domicilio (si existe)
-        if pedido_info['domicilio']:
-            frame_domicilio = tk.Frame(frame_contenido, bg='white')
-            frame_domicilio.pack(fill='x', pady=(0, 4))
-            
-            tk.Label(
-                frame_domicilio,
-                text="Domicilio:",
-                font=('Arial', 8, 'bold'),
-                bg='white',
-                anchor='w'
-            ).pack(side='left')
-            
-            tk.Label(
-                frame_domicilio,
-                text=pedido_info['domicilio'],
-                font=('Arial', 8),
-                bg='white',
-                anchor='w',
-                wraplength=ancho-40,
-                justify='left'
-            ).pack(side='left', padx=(3, 0), fill='x')
-        
-        # Separador
-        tk.Frame(frame_contenido, height=1, bg='#bdc3c7').pack(fill='x', pady=6)
-        
-        # Items del pedido
-        tk.Label(
-            frame_contenido,
-            text="PEDIDO:",
-            font=('Arial', 9, 'bold'),
-            bg='white',
-            anchor='w'
-        ).pack(fill='x', pady=(0, 4))
-        
-        # Frame para items con scroll si es necesario
-        frame_items = tk.Frame(frame_contenido, bg='white')
-        frame_items.pack(fill='both', expand=True)
-        
-        for item in pedido_info['items']:
-            frame_item = tk.Frame(frame_items, bg='white')
-            frame_item.pack(fill='x', pady=2)
-            
-            # Primera línea: Nombre del producto y cantidad (de izquierda a derecha)
-            nombre_cantidad = f"{item['producto']['nombre']} x{item['cantidad']}"
-            tk.Label(
-                frame_item,
-                text=nombre_cantidad,
-                font=('Arial', 8),
-                bg='white',
-                anchor='w'
-            ).pack(fill='x', pady=(0, 2))
-            
-            # Segunda línea: Monto total del item (alineado a la derecha)
-            subtotal = item['producto']['precio'] * item['cantidad']
-            tk.Label(
-                frame_item,
-                text=f"${subtotal:.2f}",
-                font=('Arial', 8, 'bold'),
-                bg='white',
-                anchor='e'
-            ).pack(fill='x')
-        
-        # Separador
-        tk.Frame(frame_contenido, height=1, bg='#bdc3c7').pack(fill='x', pady=6)
-        
-        # Total a pagar
-        frame_total = tk.Frame(frame_contenido, bg='white')
-        frame_total.pack(fill='x', pady=(0, 4))
-        
-        tk.Label(
-            frame_total,
-            text="TOTAL A PAGAR:",
-            font=('Arial', 9, 'bold'),
-            bg='white',
-            anchor='w'
-        ).pack(side='left')
-        
-        tk.Label(
-            frame_total,
-            text=f"${pedido_info['total']:.2f}",
-            font=('Arial', 9, 'bold'),
-            bg='white',
-            anchor='e'
-        ).pack(side='right')
-        
-        # Forma de pago
-        tk.Label(
-            frame_contenido,
-            text=f"Forma de Pago: {pedido_info['forma_pago']}",
-            font=('Arial', 8),
-            bg='white',
-            anchor='w'
-        ).pack(fill='x', pady=(3, 0))
-        
-        # Separador final
-        tk.Frame(frame_contenido, height=1, bg='#2c3e50').pack(fill='x', pady=(8, 0))
-        
-        # Marca del ticket (COCINA o CLIENTE)
-        color_marca = '#e74c3c' if tipo_ticket == 'COCINA' else '#27ae60'
-        tk.Label(
-            frame_contenido,
-            text=f"═══ {tipo_ticket} ═══",
-            font=('Arial', 9, 'bold'),
-            bg='white',
-            fg=color_marca
-        ).pack(pady=(6, 0))
-        
-        # Actualizar el frame para que se muestre correctamente
-        frame_ticket.update_idletasks()
     
     def borrar_carrito_completo(self, ventana):
         """Borra todo el contenido del carrito"""
