@@ -220,6 +220,50 @@ def tiene_modificaciones_reales(producto, modificaciones):
     return False
 
 
+def formatear_linea_ingrediente(nombre_ing, cantidad_mod, es_extra, ajuste, ancho=48):
+    """
+    Formatea una línea de ingrediente modificado con precio alineado a la derecha
+    Formato:   + Nombre xCant              +$Precio
+    o:         - Nombre                    -$Precio
+    
+    Args:
+        nombre_ing: Nombre del ingrediente
+        cantidad_mod: Cantidad modificada (extras o quitados)
+        es_extra: True si es extra, False si es quitado
+        ajuste: Precio del ajuste (positivo para extra, negativo para quitar)
+        ancho: Ancho total en caracteres
+    
+    Returns:
+        str: Línea formateada con precio alineado a la derecha
+    """
+    # Prefijo: "  + " o "  - "
+    prefijo = "  + " if es_extra else "  - "
+    
+    # Construir parte izquierda: prefijo + nombre + cantidad (si aplica)
+    parte_izq = prefijo + nombre_ing
+    if cantidad_mod > 1:
+        parte_izq += f" x{cantidad_mod}"
+    
+    # Parte derecha: precio con signo
+    if es_extra:
+        precio_str = f"+${abs(ajuste):,.2f}"
+    else:
+        precio_str = f"-${abs(ajuste):,.2f}"
+    
+    # Columna fija para precios: 38-48 (10 caracteres)
+    columna_precio_inicio = 38
+    max_ancho_parte_izq = columna_precio_inicio - 1
+    
+    # Si la parte izquierda es muy larga, truncar
+    if len(parte_izq) > max_ancho_parte_izq:
+        parte_izq = parte_izq[:max_ancho_parte_izq - 3] + "..."
+    
+    # Calcular espacios para alinear precio a la derecha
+    espacios = max(1, columna_precio_inicio - len(parte_izq))
+    
+    return parte_izq + ' ' * espacios + precio_str
+
+
 def formatear_linea_subtotal(precio_unitario, cantidad, subtotal, ancho=48):
     """
     Formatea la línea de subtotal para productos editados
@@ -363,25 +407,17 @@ def imprimir_ticket_escpos(pedido_info, tipo_ticket):
                             # Extras agregados
                             extras = cantidad_actual - cantidad_base
                             ajuste = extras * precio_extra
-                            texto_ing = f"  + {nombre_ing}"
-                            if extras > 1:
-                                texto_ing += f" x{extras}"
-                            texto_ing += f" +${ajuste:.2f}"
-                            # Truncar si es muy largo
-                            if len(texto_ing) > ancho_caracteres - 15:
-                                texto_ing = texto_ing[:ancho_caracteres - 15] + "..."
+                            texto_ing = formatear_linea_ingrediente(
+                                nombre_ing, extras, True, ajuste, ancho_caracteres
+                            )
                             printer.text(texto_ing + "\n")
                         elif cantidad_actual < cantidad_base:
                             # Ingredientes quitados
                             quitados = cantidad_base - cantidad_actual
                             ajuste = quitados * precio_resta
-                            texto_ing = f"  - {nombre_ing}"
-                            if quitados > 1:
-                                texto_ing += f" x{quitados}"
-                            texto_ing += f" -${ajuste:.2f}"
-                            # Truncar si es muy largo
-                            if len(texto_ing) > ancho_caracteres - 15:
-                                texto_ing = texto_ing[:ancho_caracteres - 15] + "..."
+                            texto_ing = formatear_linea_ingrediente(
+                                nombre_ing, quitados, False, ajuste, ancho_caracteres
+                            )
                             printer.text(texto_ing + "\n")
                 
                 # Mostrar línea de subtotal: precio_unitario x cantidad = subtotal
@@ -531,25 +567,17 @@ def guardar_ticket_texto(pedido_info, tipo_ticket):
                         # Extras agregados
                         extras = cantidad_actual - cantidad_base
                         ajuste = extras * precio_extra
-                        texto_ing = f"  + {nombre_ing}"
-                        if extras > 1:
-                            texto_ing += f" x{extras}"
-                        texto_ing += f" +${ajuste:.2f}"
-                        # Truncar si es muy largo
-                        if len(texto_ing) > ancho_caracteres - 15:
-                            texto_ing = texto_ing[:ancho_caracteres - 15] + "..."
+                        texto_ing = formatear_linea_ingrediente(
+                            nombre_ing, extras, True, ajuste, ancho_caracteres
+                        )
                         contenido.append(texto_ing)
                     elif cantidad_actual < cantidad_base:
                         # Ingredientes quitados
                         quitados = cantidad_base - cantidad_actual
                         ajuste = quitados * precio_resta
-                        texto_ing = f"  - {nombre_ing}"
-                        if quitados > 1:
-                            texto_ing += f" x{quitados}"
-                        texto_ing += f" -${ajuste:.2f}"
-                        # Truncar si es muy largo
-                        if len(texto_ing) > ancho_caracteres - 15:
-                            texto_ing = texto_ing[:ancho_caracteres - 15] + "..."
+                        texto_ing = formatear_linea_ingrediente(
+                            nombre_ing, quitados, False, ajuste, ancho_caracteres
+                        )
                         contenido.append(texto_ing)
             
             # Mostrar línea de subtotal: precio_unitario x cantidad = subtotal

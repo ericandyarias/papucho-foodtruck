@@ -511,78 +511,84 @@ class Carrito(ttk.Frame):
             messagebox.showinfo("Sin Ingredientes", mensaje)
             return
         
-        # Crear ventana modal
+        # Crear ventana modal (diseño más simple)
         ventana = tk.Toplevel(self)
         ventana.title(f"Editar Ingredientes - {producto['nombre']}")
         ventana.geometry("550x650")
         ventana.resizable(True, True)
         ventana.transient(self.winfo_toplevel())
         ventana.grab_set()
-        
+
+        # Centrar ventana
+        ventana.update_idletasks()
+        x = (ventana.winfo_screenwidth() // 2) - (ventana.winfo_width() // 2)
+        y = (ventana.winfo_screenheight() // 2) - (ventana.winfo_height() // 2)
+        ventana.geometry(f"+{x}+{y}")
+
         # Frame principal
         frame_principal = ttk.Frame(ventana, padding=20)
         frame_principal.pack(fill='both', expand=True)
         frame_principal.columnconfigure(0, weight=1)
-        frame_principal.rowconfigure(2, weight=1)  # Área de ingredientes expandible
-        
+        frame_principal.rowconfigure(2, weight=1)  # Área de ingredientes con scroll
+
         # Título
         ttk.Label(
             frame_principal,
-            text=f"Editar Ingredientes",
+            text="Editar Ingredientes",
             font=('Arial', 14, 'bold')
         ).grid(row=0, column=0, pady=(0, 5))
-        
+
         ttk.Label(
             frame_principal,
             text=producto['nombre'],
             font=('Arial', 12),
             foreground='gray'
         ).grid(row=1, column=0, pady=(0, 10))
-        
+
         # Frame para ingredientes con scroll
         frame_scroll = ttk.Frame(frame_principal)
-        frame_scroll.grid(row=1, column=0, sticky='nsew', pady=10)
+        frame_scroll.grid(row=2, column=0, sticky='nsew', pady=10)
         frame_scroll.columnconfigure(0, weight=1)
         frame_scroll.rowconfigure(0, weight=1)
-        
+
         canvas_frame = tk.Canvas(frame_scroll)
         scrollbar = ttk.Scrollbar(frame_scroll, orient="vertical", command=canvas_frame.yview)
         frame_ingredientes = ttk.Frame(canvas_frame)
-        
+
         frame_ingredientes.bind(
             "<Configure>",
             lambda e: canvas_frame.configure(scrollregion=canvas_frame.bbox("all"))
         )
-        
+
         canvas_window = canvas_frame.create_window((0, 0), window=frame_ingredientes, anchor="nw")
-        
+
         def ajustar_ancho_frame(event):
             canvas_width = event.width
             canvas_frame.itemconfig(canvas_window, width=canvas_width)
-        
+
         canvas_frame.bind('<Configure>', ajustar_ancho_frame)
         canvas_frame.configure(yscrollcommand=scrollbar.set)
-        
+
         canvas_frame.grid(row=0, column=0, sticky='nsew')
         scrollbar.grid(row=0, column=1, sticky='ns')
-        
+
         # Variables para almacenar las cantidades actuales
         variables_cantidad = {}
         modificaciones_actuales = item.get('modificaciones_ingredientes', {}).copy()
-        
-        # Frame para precio total (definir antes del loop para que esté disponible)
+
+        # Frame para precio total (debajo de los ingredientes)
         frame_precio_total = ttk.Frame(frame_principal)
-        frame_precio_total.grid(row=2, column=0, sticky='ew', pady=10)
-        
+        frame_precio_total.grid(row=3, column=0, sticky='ew', pady=10)
+
         ttk.Separator(frame_precio_total, orient='horizontal').pack(fill='x', pady=5)
-        
+
         label_precio_base = ttk.Label(
             frame_precio_total,
             text=f"Precio base: ${producto['precio']:.2f}",
             font=('Arial', 10)
         )
         label_precio_base.pack()
-        
+
         label_precio_final = ttk.Label(
             frame_precio_total,
             text="",
@@ -590,13 +596,12 @@ class Carrito(ttk.Frame):
             foreground='#27ae60'
         )
         label_precio_final.pack()
-        
-        # Función para calcular precio total (definir antes del loop para que esté disponible)
+
+        # Función para calcular precio total
         def actualizar_precio_total():
-            # Calcular precio manualmente considerando cada ingrediente por separado
             precio_base = producto.get('precio', 0.0)
             ajuste_total = 0.0
-            
+
             for idx_var, var in variables_cantidad.items():
                 if isinstance(idx_var, int) and idx_var < len(ingredientes):
                     ingrediente = ingredientes[idx_var]
@@ -604,17 +609,17 @@ class Carrito(ttk.Frame):
                     precio_extra = ingrediente.get('precio_extra', 0.0)
                     precio_resta = ingrediente.get('precio_resta', 0.0)
                     cantidad_actual = var.get()
-                    
+
                     if cantidad_actual > cantidad_base:
                         extras = cantidad_actual - cantidad_base
                         ajuste_total += extras * precio_extra
                     elif cantidad_actual < cantidad_base:
                         quitados = cantidad_base - cantidad_actual
                         ajuste_total -= quitados * precio_resta
-            
+
             precio_final = precio_base + ajuste_total
             ajuste = precio_final - precio_base
-            
+
             if ajuste != 0:
                 signo = "+" if ajuste > 0 else ""
                 label_precio_final.config(
@@ -622,125 +627,130 @@ class Carrito(ttk.Frame):
                 )
             else:
                 label_precio_final.config(text=f"Precio final: ${precio_final:.2f}")
-        
+
         # Debug: verificar ingredientes
         print(f"DEBUG: Producto {producto['nombre']} tiene {len(ingredientes)} ingredientes")
         for ing in ingredientes:
             print(f"  - {ing.get('nombre', 'SIN NOMBRE')}")
-        
+
+        # Layout de dos columnas para los ingredientes
+        frame_ingredientes.columnconfigure(0, weight=1)
+        frame_ingredientes.columnconfigure(1, weight=1)
+
         # Mostrar cada ingrediente
         if not ingredientes:
-            # Si no hay ingredientes, mostrar mensaje
             ttk.Label(
                 frame_ingredientes,
                 text="Este producto no tiene ingredientes configurables.",
                 font=('Arial', 10),
                 foreground='gray'
             ).grid(row=0, column=0, padx=20, pady=20)
-        
+
         for idx, ingrediente in enumerate(ingredientes):
             nombre = ingrediente.get('nombre', '')
             cantidad_base = ingrediente.get('cantidad_base', 1)
             precio_extra = ingrediente.get('precio_extra', 0.0)
             precio_resta = ingrediente.get('precio_resta', 0.0)
-            
+
             # Obtener cantidad actual (o base si no hay modificación)
             cantidad_actual = modificaciones_actuales.get(nombre, cantidad_base)
-            
-            # Frame para cada ingrediente
+
+            # Posición en dos columnas
+            fila = idx // 2
+            columna = idx % 2
+
+            # Frame para cada ingrediente (diseño simple)
             frame_ing = ttk.LabelFrame(frame_ingredientes, text=nombre, padding=10)
-            frame_ing.grid(row=idx, column=0, sticky='ew', padx=5, pady=5)
+            frame_ing.grid(row=fila, column=columna, sticky='nsew', padx=5, pady=5)
             frame_ing.columnconfigure(1, weight=1)
-            
+
             # Variable para la cantidad (usar índice para manejar duplicados)
             var_cantidad = tk.IntVar(value=cantidad_actual)
-            # Usar índice como clave para evitar conflictos con ingredientes duplicados
             variables_cantidad[idx] = var_cantidad
-            
+
             # Label cantidad
             ttk.Label(frame_ing, text="Cantidad:").grid(row=0, column=0, padx=5, sticky='w')
-            
+
             # Frame para controles de cantidad
             frame_controles = ttk.Frame(frame_ing)
-            frame_controles.grid(row=0, column=1, sticky='ew', padx=5)
-            
+            frame_controles.grid(row=0, column=1, sticky='w', padx=5)
+
             # Botón menos
             btn_menos = ttk.Button(
                 frame_controles,
                 text="-",
                 width=3,
-                command=lambda n=nombre, v=var_cantidad: v.set(max(0, v.get() - 1))
+                command=lambda v=var_cantidad: v.set(max(0, v.get() - 1))
             )
             btn_menos.pack(side='left', padx=2)
-            
+
             # Label cantidad actual
             label_cantidad = ttk.Label(frame_controles, textvariable=var_cantidad, width=5)
             label_cantidad.pack(side='left', padx=5)
-            
+
             # Botón más
             btn_mas = ttk.Button(
                 frame_controles,
                 text="+",
                 width=3,
-                command=lambda n=nombre, v=var_cantidad: v.set(v.get() + 1)
+                command=lambda v=var_cantidad: v.set(v.get() + 1)
             )
             btn_mas.pack(side='left', padx=2)
-            
-            # Información de precios (cambiar gris a negro)
+
+            # Información de precios
             info_text = f"Base: {cantidad_base}"
             if precio_extra > 0:
                 info_text += f" | Extra: +${precio_extra:.2f}"
             if precio_resta > 0:
                 info_text += f" | Quitar: -${precio_resta:.2f}"
-            
+
             ttk.Label(
                 frame_ing,
                 text=info_text,
                 font=('Arial', 8),
                 foreground='black'
             ).grid(row=1, column=0, columnspan=2, sticky='w', padx=5, pady=2)
-            
-            # Función para actualizar impacto en precio
-            def actualizar_impacto(nombre_ing, var, cantidad_base, precio_extra, precio_resta):
-                cantidad = var.get()
-                if cantidad > cantidad_base:
-                    impacto = (cantidad - cantidad_base) * precio_extra
-                    return f"+${impacto:.2f}"
-                elif cantidad < cantidad_base:
-                    impacto = (cantidad_base - cantidad) * precio_resta
-                    return f"-${impacto:.2f}"
-                else:
-                    return "$0.00"
-            
+
             # Label impacto en precio
             label_impacto = ttk.Label(frame_ing, text="", font=('Arial', 9, 'bold'))
             label_impacto.grid(row=2, column=0, columnspan=2, sticky='w', padx=5, pady=2)
-            
-            def actualizar_impacto_ui():
-                impacto = actualizar_impacto(nombre, var_cantidad, cantidad_base, precio_extra, precio_resta)
-                if impacto != "$0.00":
-                    label_impacto.config(text=f"Impacto: {impacto}", foreground='#e67e22')
+
+            # Callback para actualizar impacto y precio total
+            def on_cambio_cantidad(*_args,
+                                   var_ref=var_cantidad,
+                                   label_ref=label_impacto,
+                                   base=cantidad_base,
+                                   p_extra=precio_extra,
+                                   p_resta=precio_resta):
+                cantidad = var_ref.get()
+                if cantidad > base:
+                    impacto = (cantidad - base) * p_extra
+                    label_ref.config(text=f"Impacto: +${impacto:.2f}", foreground='#e67e22')
+                elif cantidad < base:
+                    impacto = (base - cantidad) * p_resta
+                    label_ref.config(text=f"Impacto: -${impacto:.2f}", foreground='#e67e22')
                 else:
-                    label_impacto.config(text="", foreground='gray')
-                # Actualizar precio total en tiempo real
+                    label_ref.config(text="", foreground='gray')
                 actualizar_precio_total()
-            
-            var_cantidad.trace('w', lambda *args: actualizar_impacto_ui())
-            actualizar_impacto_ui()
-        
+
+            # Vincular cambios de cantidad
+            var_cantidad.trace_add('write', on_cambio_cantidad)
+            # Inicializar impacto para el estado actual
+            on_cambio_cantidad()
+
         # Asegurar que el frame_ingredientes tenga el ancho correcto
         frame_ingredientes.update_idletasks()
         canvas_frame.update_idletasks()
-        
+
         # Inicializar precio total al abrir la ventana
         actualizar_precio_total()
-        
-        # Frame para botones
+
+        # Frame para botones (simple)
         frame_botones = ttk.Frame(frame_principal)
         frame_botones.grid(row=4, column=0, pady=15, sticky='ew')
         frame_botones.columnconfigure(0, weight=1)
         frame_botones.columnconfigure(1, weight=1)
-        
+
         # Botón Cancelar
         btn_cancelar = tk.Button(
             frame_botones,
