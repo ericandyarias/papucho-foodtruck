@@ -224,7 +224,8 @@ def obtener_ingredientes_producto(producto_id):
 def agregar_ingrediente_a_producto(producto_id, ingrediente_data):
     """
     Agrega un ingrediente a un producto
-    ingrediente_data debe tener: nombre, cantidad_base, precio_extra, precio_resta
+    ingrediente_data debe tener: nombre, cantidad_base
+    NOTA: Los precios (precio_extra, precio_resta) se obtienen dinámicamente desde ingredientes.json
     """
     data = cargar_productos()
     
@@ -233,7 +234,14 @@ def agregar_ingrediente_a_producto(producto_id, ingrediente_data):
             if producto.get("id") == producto_id:
                 if "ingredientes" not in producto:
                     producto["ingredientes"] = []
-                producto["ingredientes"].append(ingrediente_data)
+                
+                # Solo guardar nombre y cantidad_base (sistema de referencias)
+                ingrediente_referencia = {
+                    "nombre": ingrediente_data.get("nombre", ""),
+                    "cantidad_base": ingrediente_data.get("cantidad_base", 1)
+                }
+                
+                producto["ingredientes"].append(ingrediente_referencia)
                 guardar_productos(data)
                 return True
     
@@ -249,7 +257,12 @@ def modificar_ingrediente_producto(producto_id, indice_ingrediente, ingrediente_
             if producto.get("id") == producto_id:
                 ingredientes = producto.get("ingredientes", [])
                 if 0 <= indice_ingrediente < len(ingredientes):
-                    ingredientes[indice_ingrediente] = ingrediente_data
+                    # Solo guardar nombre y cantidad_base (sistema de referencias)
+                    ingrediente_referencia = {
+                        "nombre": ingrediente_data.get("nombre", ""),
+                        "cantidad_base": ingrediente_data.get("cantidad_base", 1)
+                    }
+                    ingredientes[indice_ingrediente] = ingrediente_referencia
                     guardar_productos(data)
                     return True
     
@@ -275,6 +288,7 @@ def eliminar_ingrediente_producto(producto_id, indice_ingrediente):
 def calcular_precio_con_ingredientes(producto, modificaciones_ingredientes=None):
     """
     Calcula el precio final de un producto considerando modificaciones de ingredientes
+    Los precios de los ingredientes se obtienen dinámicamente desde ingredientes.json
     
     Args:
         producto: Diccionario del producto con precio base y opcionalmente ingredientes
@@ -293,11 +307,22 @@ def calcular_precio_con_ingredientes(producto, modificaciones_ingredientes=None)
     
     ajuste_total = 0.0
     
+    # Importar aquí para evitar importación circular
+    from utils.ingredientes import buscar_ingrediente_por_nombre
+    
     for ingrediente in ingredientes:
         nombre = ingrediente.get("nombre", "")
         cantidad_base = ingrediente.get("cantidad_base", 1)
-        precio_extra = ingrediente.get("precio_extra", 0.0)
-        precio_resta = ingrediente.get("precio_resta", 0.0)
+        
+        # Buscar el ingrediente actualizado desde ingredientes.json para obtener precios
+        ingrediente_actualizado = buscar_ingrediente_por_nombre(nombre)
+        if not ingrediente_actualizado:
+            # Si el ingrediente no existe, usar valores por defecto (0.0)
+            precio_extra = 0.0
+            precio_resta = 0.0
+        else:
+            precio_extra = ingrediente_actualizado.get("precio_extra", 0.0)
+            precio_resta = ingrediente_actualizado.get("precio_resta", 0.0)
         
         # Obtener cantidad modificada (usar cantidad_base si no se modificó)
         cantidad_modificada = modificaciones_ingredientes.get(nombre, cantidad_base)

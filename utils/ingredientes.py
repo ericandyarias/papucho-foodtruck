@@ -72,6 +72,17 @@ def buscar_ingrediente_por_id(ingrediente_id):
     return None
 
 
+def buscar_ingrediente_por_nombre(nombre):
+    """Busca un ingrediente por su nombre"""
+    data = cargar_ingredientes()
+    
+    for ingrediente in data.get("ingredientes", []):
+        if ingrediente.get("nombre") == nombre:
+            return ingrediente
+    
+    return None
+
+
 def agregar_ingrediente(nombre, categorias, precio_extra, precio_resta):
     """Agrega un nuevo ingrediente"""
     data = cargar_ingredientes()
@@ -90,32 +101,87 @@ def agregar_ingrediente(nombre, categorias, precio_extra, precio_resta):
 
 
 def modificar_ingrediente(ingrediente_id, nombre, categorias, precio_extra, precio_resta):
-    """Modifica un ingrediente existente"""
+    """Modifica un ingrediente existente y actualiza el nombre en todos los productos que lo usan"""
     data = cargar_ingredientes()
     
+    # Buscar el ingrediente para obtener el nombre anterior
+    ingrediente_anterior = None
+    nombre_anterior = None
     for ingrediente in data.get("ingredientes", []):
         if ingrediente.get("id") == ingrediente_id:
+            ingrediente_anterior = ingrediente
+            nombre_anterior = ingrediente.get("nombre", "")
             ingrediente["nombre"] = nombre
             ingrediente["categorias"] = categorias if isinstance(categorias, list) else [categorias]
             ingrediente["precio_extra"] = float(precio_extra)
             ingrediente["precio_resta"] = float(precio_resta)
             guardar_ingredientes(data)
-            return True
+            break
     
-    return False
+    if not ingrediente_anterior:
+        return False
+    
+    # Si el nombre cambió, actualizar el nombre en todos los productos que lo usan
+    if nombre_anterior and nombre_anterior != nombre:
+        from utils.productos import cargar_productos, guardar_productos
+        productos_data = cargar_productos()
+        productos_modificados = False
+        
+        for categoria in productos_data.get("categorias", []):
+            for producto in categoria.get("productos", []):
+                ingredientes = producto.get("ingredientes", [])
+                if ingredientes:
+                    for ing in ingredientes:
+                        if ing.get("nombre") == nombre_anterior:
+                            ing["nombre"] = nombre
+                            productos_modificados = True
+        
+        if productos_modificados:
+            guardar_productos(productos_data)
+    
+    return True
 
 
 def eliminar_ingrediente(ingrediente_id):
-    """Elimina un ingrediente por su ID"""
+    """Elimina un ingrediente por su ID y también lo elimina de todos los productos que lo usan"""
     data = cargar_ingredientes()
     
+    # Buscar el ingrediente para obtener su nombre
+    ingrediente_a_eliminar = None
     for idx, ingrediente in enumerate(data.get("ingredientes", [])):
         if ingrediente.get("id") == ingrediente_id:
+            ingrediente_a_eliminar = ingrediente
             data["ingredientes"].pop(idx)
             guardar_ingredientes(data)
-            return True
+            break
     
-    return False
+    if not ingrediente_a_eliminar:
+        return False
+    
+    # Eliminar el ingrediente de todos los productos que lo usan
+    nombre_ingrediente = ingrediente_a_eliminar.get("nombre")
+    if nombre_ingrediente:
+        from utils.productos import cargar_productos, guardar_productos
+        productos_data = cargar_productos()
+        productos_modificados = False
+        
+        for categoria in productos_data.get("categorias", []):
+            for producto in categoria.get("productos", []):
+                ingredientes = producto.get("ingredientes", [])
+                if ingredientes:
+                    # Filtrar ingredientes que coincidan con el nombre
+                    ingredientes_originales = len(ingredientes)
+                    producto["ingredientes"] = [
+                        ing for ing in ingredientes 
+                        if ing.get("nombre") != nombre_ingrediente
+                    ]
+                    if len(producto["ingredientes"]) < ingredientes_originales:
+                        productos_modificados = True
+        
+        if productos_modificados:
+            guardar_productos(productos_data)
+    
+    return True
 
 
 def obtener_ingredientes_por_categoria(categoria_nombre):

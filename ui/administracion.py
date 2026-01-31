@@ -397,6 +397,10 @@ class VentanaAdministracion:
         self.text_descripcion.delete('1.0', 'end')
         self.producto_seleccionado = None
         self.tree.selection_remove(self.tree.selection())
+        # Limpiar el treeview de ingredientes del producto
+        if hasattr(self, 'tree_ingredientes_producto'):
+            for item in self.tree_ingredientes_producto.get_children():
+                self.tree_ingredientes_producto.delete(item)
     
     def validar_formulario(self):
         """Valida que el formulario esté completo"""
@@ -796,6 +800,13 @@ class VentanaAdministracion:
                 messagebox.showinfo("Éxito", "Ingrediente modificado correctamente")
                 self.cargar_lista_ingredientes()
                 self.nuevo_ingrediente()
+                # Si hay un producto seleccionado, recargar sus ingredientes para mostrar cambios
+                if self.producto_seleccionado:
+                    from utils.productos import buscar_producto_por_id
+                    resultado = buscar_producto_por_id(self.producto_seleccionado['id'])
+                    if resultado:
+                        self.producto_seleccionado = resultado['producto']
+                        self.cargar_ingredientes_producto()
             else:
                 messagebox.showerror("Error", "No se pudo modificar el ingrediente")
         except Exception as e:
@@ -844,16 +855,32 @@ class VentanaAdministracion:
         if not self.producto_seleccionado:
             return
         
+        # Importar función para buscar ingrediente por nombre
+        from utils.ingredientes import buscar_ingrediente_por_nombre
+        
         ingredientes = self.producto_seleccionado.get('ingredientes', [])
         for ingrediente in ingredientes:
+            nombre_ing = ingrediente.get('nombre', '')
+            cantidad_base_ing = ingrediente.get('cantidad_base', 1)
+            
+            # Buscar el ingrediente actualizado desde ingredientes.json para obtener precios
+            ingrediente_actualizado = buscar_ingrediente_por_nombre(nombre_ing)
+            if ingrediente_actualizado:
+                precio_extra_ing = ingrediente_actualizado.get('precio_extra', 0.0)
+                precio_resta_ing = ingrediente_actualizado.get('precio_resta', 0.0)
+            else:
+                # Si el ingrediente no existe, mostrar 0.0
+                precio_extra_ing = 0.0
+                precio_resta_ing = 0.0
+            
             self.tree_ingredientes_producto.insert(
                 '',
                 'end',
                 values=(
-                    ingrediente.get('nombre', ''),
-                    ingrediente.get('cantidad_base', 0),
-                    f"${ingrediente.get('precio_extra', 0):.2f}",
-                    f"${ingrediente.get('precio_resta', 0):.2f}"
+                    nombre_ing,
+                    cantidad_base_ing,
+                    f"${precio_extra_ing:.2f}",
+                    f"${precio_resta_ing:.2f}"
                 )
             )
     

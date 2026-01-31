@@ -363,12 +363,23 @@ class Carrito(ttk.Frame):
                 ingredientes = item['producto'].get('ingredientes', [])
                 fila_detalle = fila_precio + 1
                 
+                # Importar función para buscar ingrediente por nombre
+                from utils.ingredientes import buscar_ingrediente_por_nombre
+                
                 for ingrediente in ingredientes:
                     nombre_ing = ingrediente.get('nombre', '')
                     cantidad_base = ingrediente.get('cantidad_base', 1)
                     cantidad_actual = modificaciones.get(nombre_ing, cantidad_base)
-                    precio_extra = ingrediente.get('precio_extra', 0.0)
-                    precio_resta = ingrediente.get('precio_resta', 0.0)
+                    
+                    # Buscar el ingrediente actualizado desde ingredientes.json para obtener precios
+                    ingrediente_actualizado = buscar_ingrediente_por_nombre(nombre_ing)
+                    if ingrediente_actualizado:
+                        precio_extra = ingrediente_actualizado.get('precio_extra', 0.0)
+                        precio_resta = ingrediente_actualizado.get('precio_resta', 0.0)
+                    else:
+                        # Si el ingrediente no existe, usar 0.0
+                        precio_extra = 0.0
+                        precio_resta = 0.0
                     
                     if cantidad_actual > cantidad_base:
                         # Extras agregados

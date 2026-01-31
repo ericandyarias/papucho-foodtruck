@@ -2,13 +2,12 @@
   "ingredientes": [
     {
       "id": 1,
-      "nombre": "Tomáte",
+      "nombre": "Tomate",
       "categorias": [
         "Hamburguesas",
-        "Lomitos",
-        "Milanesas"
+        "Lomitos"
       ],
-      "precio_extra": 500.0,
+      "precio_extra": 400.0,
       "precio_resta": 400.0
     },
     {

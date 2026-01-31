@@ -10,12 +10,6 @@
           "descripcion": "Tomáte, lechuga, paleta, queso, huevo y fritas.",
           "ingredientes": [
             {
-              "nombre": "Tomáte",
-              "cantidad_base": 1,
-              "precio_extra": 500.0,
-              "precio_resta": 400.0
-            },
-            {
               "nombre": "Lechuga",
               "cantidad_base": 1,
               "precio_extra": 500.0,
@@ -32,6 +26,10 @@
               "cantidad_base": 1,
               "precio_extra": 900.0,
               "precio_resta": 900.0
+            },
+            {
+              "nombre": "Tomate",
+              "cantidad_base": 1
             }
           ]
         },
@@ -42,16 +40,14 @@
           "descripcion": "Tomáte, lechuga y fritas.",
           "ingredientes": [
             {
-              "nombre": "Tomáte",
-              "cantidad_base": 1,
-              "precio_extra": 500.0,
-              "precio_resta": 400.0
-            },
-            {
               "nombre": "Lechuga",
               "cantidad_base": 1,
               "precio_extra": 500.0,
               "precio_resta": 500.0
+            },
+            {
+              "nombre": "Tomate",
+              "cantidad_base": 1
             }
           ]
         },
@@ -83,13 +79,25 @@
           "id": 7,
           "nombre": "Hamburguesa Completa S/Papas",
           "precio": 7500.0,
-          "descripcion": "Tomáte, lechuga, paleta, queso y huevo."
+          "descripcion": "Tomáte, lechuga, paleta, queso y huevo.",
+          "ingredientes": [
+            {
+              "nombre": "Tomate",
+              "cantidad_base": 1
+            }
+          ]
         },
         {
           "id": 8,
           "nombre": "Hamburguesa Simple S/Papas",
           "precio": 6000.0,
-          "descripcion": "Tomáte y lechuga."
+          "descripcion": "Tomáte y lechuga.",
+          "ingredientes": [
+            {
+              "nombre": "Tomate",
+              "cantidad_base": 1
+            }
+          ]
         },
         {
           "id": 9,
@@ -107,14 +115,7 @@
           "nombre": "Lomito Completo",
           "precio": 9500.0,
           "descripcion": "Tomáte, lechuga, paleta, queso, huevo y fritas.",
-          "ingredientes": [
-            {
-              "nombre": "Tomáte",
-              "cantidad_base": 1,
-              "precio_extra": 500.0,
-              "precio_resta": 400.0
-            }
-          ]
+          "ingredientes": []
         },
         {
           "id": 11,

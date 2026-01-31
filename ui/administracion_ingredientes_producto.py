@@ -3,7 +3,7 @@ Funciones auxiliares para gestionar ingredientes en productos
 """
 import tkinter as tk
 from tkinter import messagebox
-from utils.ingredientes import obtener_todos_los_ingredientes
+from utils.ingredientes import obtener_todos_los_ingredientes, buscar_ingrediente_por_nombre
 from utils.productos import agregar_ingrediente_a_producto, eliminar_ingrediente_producto
 
 
@@ -24,13 +24,11 @@ def cargar_ingredientes_por_categoria(combo, categoria):
     combo['values'] = ingredientes_disponibles
 
 
+# La función obtener_ingrediente_por_nombre ahora está en utils.ingredientes como buscar_ingrediente_por_nombre
+# Mantener esta función por compatibilidad con código existente
 def obtener_ingrediente_por_nombre(nombre):
-    """Obtiene un ingrediente por su nombre"""
-    todos_ingredientes = obtener_todos_los_ingredientes()
-    for ingrediente in todos_ingredientes:
-        if ingrediente['nombre'] == nombre:
-            return ingrediente
-    return None
+    """Obtiene un ingrediente por su nombre (wrapper para buscar_ingrediente_por_nombre)"""
+    return buscar_ingrediente_por_nombre(nombre)
 
 
 def agregar_ingrediente_a_producto_ui(producto_id, nombre_ingrediente, cantidad_base, combo, tree, entry_cantidad):
@@ -53,25 +51,23 @@ def agregar_ingrediente_a_producto_ui(producto_id, nombre_ingrediente, cantidad_
         messagebox.showerror("Error", "Ingrediente no encontrado")
         return
     
-    # Crear estructura de ingrediente para el producto
+    # Crear estructura de ingrediente para el producto (solo nombre y cantidad_base)
     ingrediente_data = {
         "nombre": ingrediente['nombre'],
-        "cantidad_base": cantidad_base_int,
-        "precio_extra": ingrediente['precio_extra'],
-        "precio_resta": ingrediente['precio_resta']
+        "cantidad_base": cantidad_base_int
     }
     
     # Agregar al producto
     if agregar_ingrediente_a_producto(producto_id, ingrediente_data):
-        # Actualizar treeview
+        # Actualizar treeview (mostrar precios desde ingrediente actualizado)
         tree.insert(
             '',
             'end',
             values=(
-                ingrediente_data['nombre'],
-                ingrediente_data['cantidad_base'],
-                f"${ingrediente_data['precio_extra']:.2f}",
-                f"${ingrediente_data['precio_resta']:.2f}"
+                ingrediente['nombre'],
+                cantidad_base_int,
+                f"${ingrediente['precio_extra']:.2f}",
+                f"${ingrediente['precio_resta']:.2f}"
             )
         )
         # Limpiar selección
