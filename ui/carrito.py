@@ -167,56 +167,50 @@ class Carrito(ttk.Frame):
         self.actualizar_estilo_boton_borrar()
     
     def agregar_item(self, producto, cantidad=1):
-        """Agrega un item al carrito"""
-        # Buscar si el producto ya está en el carrito
-        for item in self.items:
-            if item['producto']['id'] == producto['id']:
-                item['cantidad'] += cantidad
-                self.actualizar_vista()
-                return
-        
+        """Agrega un item al carrito (siempre agrega un nuevo item base)"""
         # Recargar el producto desde el JSON para obtener la versión más actualizada con ingredientes
         from utils.productos import buscar_producto_por_id
         resultado = buscar_producto_por_id(producto['id'])
         if resultado:
             # Usar el producto actualizado del JSON
-            producto = resultado['producto'].copy()
-            producto['categoria'] = resultado.get('categoria', '')
+            producto_actualizado = resultado['producto'].copy()
+            producto_actualizado['categoria'] = resultado.get('categoria', '')
         else:
             # Si no se encuentra, usar el producto original pero asegurar que tenga categoría
-            if 'categoria' not in producto:
-                producto['categoria'] = ''
+            producto_actualizado = producto.copy()
+            if 'categoria' not in producto_actualizado:
+                producto_actualizado['categoria'] = ''
         
+        # Siempre agregar un nuevo item base (sin modificaciones)
         # Inicializar modificaciones_ingredientes: dict con {nombre_ingrediente: cantidad_actual}
         modificaciones_ingredientes = {}
-        ingredientes = producto.get("ingredientes", [])
+        ingredientes = producto_actualizado.get("ingredientes", [])
         for ingrediente in ingredientes:
             nombre = ingrediente.get("nombre", "")
             cantidad_base = ingrediente.get("cantidad_base", 1)
             modificaciones_ingredientes[nombre] = cantidad_base
         
         self.items.append({
-            'producto': producto,
+            'producto': producto_actualizado,
             'cantidad': cantidad,
             'modificaciones_ingredientes': modificaciones_ingredientes
         })
         self.actualizar_vista()
     
-    def eliminar_item(self, producto_id):
-        """Elimina un item del carrito"""
-        self.items = [item for item in self.items if item['producto']['id'] != producto_id]
-        self.actualizar_vista()
+    def eliminar_item(self, item_idx):
+        """Elimina un item del carrito por su índice"""
+        if 0 <= item_idx < len(self.items):
+            self.items.pop(item_idx)
+            self.actualizar_vista()
     
-    def actualizar_cantidad(self, producto_id, nueva_cantidad):
-        """Actualiza la cantidad de un item"""
-        for item in self.items:
-            if item['producto']['id'] == producto_id:
-                if nueva_cantidad <= 0:
-                    self.eliminar_item(producto_id)
-                else:
-                    item['cantidad'] = nueva_cantidad
-                break
-        self.actualizar_vista()
+    def actualizar_cantidad(self, item_idx, nueva_cantidad):
+        """Actualiza la cantidad de un item por su índice"""
+        if 0 <= item_idx < len(self.items):
+            if nueva_cantidad <= 0:
+                self.eliminar_item(item_idx)
+            else:
+                self.items[item_idx]['cantidad'] = nueva_cantidad
+            self.actualizar_vista()
     
     def calcular_total(self):
         """Calcula el total del carrito considerando modificaciones de ingredientes"""
@@ -356,48 +350,72 @@ class Carrito(ttk.Frame):
             
             # Mostrar precio base y ajustes si hay modificaciones
             precio_base = item['producto']['precio']
+            fila_precio = 1
             if precio_unitario != precio_base:
                 ttk.Label(
                     info_frame,
                     text=f"Base: ${precio_base:.2f} → ${precio_unitario:.2f} x {item['cantidad']} = ${subtotal:.2f}",
                     font=('Arial', 9),
                     foreground='#e67e22'
-                ).grid(row=1, column=0, sticky='w')
+                ).grid(row=fila_precio, column=0, sticky='w')
+                
+                # Mostrar detalle de ingredientes modificados (extras y quitados)
+                ingredientes = item['producto'].get('ingredientes', [])
+                fila_detalle = fila_precio + 1
+                
+                for ingrediente in ingredientes:
+                    nombre_ing = ingrediente.get('nombre', '')
+                    cantidad_base = ingrediente.get('cantidad_base', 1)
+                    cantidad_actual = modificaciones.get(nombre_ing, cantidad_base)
+                    precio_extra = ingrediente.get('precio_extra', 0.0)
+                    precio_resta = ingrediente.get('precio_resta', 0.0)
+                    
+                    if cantidad_actual > cantidad_base:
+                        # Extras agregados
+                        extras = cantidad_actual - cantidad_base
+                        precio_total_extra = precio_extra * extras * item['cantidad']
+                        if extras > 1:
+                            texto_detalle = f"  {extras} Extra {nombre_ing} +${precio_total_extra:.2f}"
+                        else:
+                            texto_detalle = f"  Extra {nombre_ing} +${precio_total_extra:.2f}"
+                        
+                        ttk.Label(
+                            info_frame,
+                            text=texto_detalle,
+                            font=('Arial', 8),
+                            foreground='#e67e22'
+                        ).grid(row=fila_detalle, column=0, sticky='w')
+                        fila_detalle += 1
+                    elif cantidad_actual < cantidad_base:
+                        # Ingredientes quitados
+                        quitados = cantidad_base - cantidad_actual
+                        precio_total_resta = precio_resta * quitados * item['cantidad']
+                        if quitados > 1:
+                            texto_detalle = f"  {quitados} Sin {nombre_ing} -${precio_total_resta:.2f}"
+                        else:
+                            texto_detalle = f"  Sin {nombre_ing} -${precio_total_resta:.2f}"
+                        
+                        ttk.Label(
+                            info_frame,
+                            text=texto_detalle,
+                            font=('Arial', 8),
+                            foreground='#e67e22'
+                        ).grid(row=fila_detalle, column=0, sticky='w')
+                        fila_detalle += 1
             else:
                 ttk.Label(
                     info_frame,
                     text=f"${precio_unitario:.2f} x {item['cantidad']} = ${subtotal:.2f}",
                     font=('Arial', 11),
                     foreground='gray'
-                ).grid(row=1, column=0, sticky='w')
+                ).grid(row=fila_precio, column=0, sticky='w')
             
             # Controles de cantidad
             controles_frame = ttk.Frame(frame_item)
             controles_frame.grid(row=0, column=1, padx=5, pady=5, sticky='e')
             
-            # Guardar referencia al producto_id para los callbacks (usando default parameter para capturar el valor)
-            producto_id = item['producto']['id']
-            
-            # Crear funciones con closure correcto usando default parameters
-            def crear_callback_menos(pid):
-                """Crea un callback para disminuir cantidad con el producto_id correcto"""
-                def callback():
-                    # Buscar la cantidad actual del producto específico
-                    for it in self.items:
-                        if it['producto']['id'] == pid:
-                            self.actualizar_cantidad(pid, it['cantidad'] - 1)
-                            break
-                return callback
-            
-            def crear_callback_mas(pid):
-                """Crea un callback para aumentar cantidad con el producto_id correcto"""
-                def callback():
-                    # Buscar la cantidad actual del producto específico
-                    for it in self.items:
-                        if it['producto']['id'] == pid:
-                            self.actualizar_cantidad(pid, it['cantidad'] + 1)
-                            break
-                return callback
+            # Usar el índice del item para los callbacks
+            item_index = idx
             
             # Botón editar ingredientes (a la izquierda del botón menos)
             # SOLO mostrar el botón si el producto tiene ingredientes definidos
@@ -408,7 +426,7 @@ class Carrito(ttk.Frame):
             if not categoria:
                 # Buscar la categoría del producto
                 from utils.productos import buscar_producto_por_id
-                resultado = buscar_producto_por_id(producto_id)
+                resultado = buscar_producto_por_id(item['producto']['id'])
                 if resultado:
                     categoria = resultado.get('categoria', '')
                     item['producto']['categoria'] = categoria
@@ -420,7 +438,7 @@ class Carrito(ttk.Frame):
                     controles_frame,
                     text="✏️",
                     width=3,
-                    command=lambda pid=producto_id: self.editar_ingredientes(pid)
+                    command=lambda idx=item_index: self.editar_ingredientes(idx)
                 )
                 btn_editar.grid(row=0, column=columna_actual, padx=2)
                 columna_actual += 1
@@ -430,7 +448,7 @@ class Carrito(ttk.Frame):
                 controles_frame,
                 text="-",
                 width=3,
-                command=crear_callback_menos(producto_id)
+                command=lambda idx=item_index: self.actualizar_cantidad(idx, item['cantidad'] - 1)
             )
             btn_menos.grid(row=0, column=columna_actual, padx=2)
             columna_actual += 1
@@ -447,7 +465,7 @@ class Carrito(ttk.Frame):
                 controles_frame,
                 text="+",
                 width=3,
-                command=crear_callback_mas(producto_id)
+                command=lambda idx=item_index: self.actualizar_cantidad(idx, item['cantidad'] + 1)
             )
             btn_mas.grid(row=0, column=columna_actual, padx=2)
             columna_actual += 1
@@ -457,7 +475,7 @@ class Carrito(ttk.Frame):
                 controles_frame,
                 text="🗑️",
                 width=3,
-                command=lambda pid=producto_id: self.eliminar_item(pid)
+                command=lambda idx=item_index: self.eliminar_item(idx)
             )
             btn_eliminar.grid(row=0, column=columna_actual, padx=2)
         
@@ -470,25 +488,24 @@ class Carrito(ttk.Frame):
         self.actualizar_estilo_boton_confirmar()
         self.actualizar_estilo_boton_borrar()
     
-    def editar_ingredientes(self, producto_id):
-        """Abre una ventana para editar los ingredientes de un producto"""
-        # Buscar el item en el carrito
-        item = None
-        for it in self.items:
-            if it['producto']['id'] == producto_id:
-                item = it
-                break
-        
-        if not item:
+    def editar_ingredientes(self, item_idx):
+        """Abre una ventana para editar los ingredientes de un item específico"""
+        # Obtener el item por su índice
+        if not (0 <= item_idx < len(self.items)):
             return
+        
+        # Guardar el índice en una variable local para usar en el closure
+        item_index = item_idx
+        item = self.items[item_index]
         
         # Recargar el producto desde el JSON para obtener ingredientes actualizados
         from utils.productos import buscar_producto_por_id
-        resultado = buscar_producto_por_id(producto_id)
+        resultado = buscar_producto_por_id(item['producto']['id'])
         if resultado:
             # Actualizar el producto en el item con la versión más reciente
             producto_actualizado = resultado['producto']
-            item['producto'] = producto_actualizado
+            self.items[item_index]['producto'] = producto_actualizado
+            item = self.items[item_index]  # Actualizar referencia local
             # Si hay nuevos ingredientes, inicializar sus modificaciones
             modificaciones = item.get('modificaciones_ingredientes', {})
             ingredientes_actuales = producto_actualizado.get('ingredientes', [])
@@ -497,7 +514,8 @@ class Carrito(ttk.Frame):
                 if nombre not in modificaciones:
                     # Inicializar con cantidad_base si es un ingrediente nuevo
                     modificaciones[nombre] = ingrediente.get('cantidad_base', 1)
-            item['modificaciones_ingredientes'] = modificaciones
+            self.items[item_index]['modificaciones_ingredientes'] = modificaciones
+            item = self.items[item_index]  # Actualizar referencia local
         
         producto = item['producto']
         ingredientes = producto.get('ingredientes', [])
@@ -769,6 +787,11 @@ class Carrito(ttk.Frame):
         
         # Botón Guardar/Aceptar
         def guardar_modificaciones():
+            # Verificar que el índice sigue siendo válido
+            if not (0 <= item_index < len(self.items)):
+                ventana.destroy()
+                return
+            
             # Convertir modificaciones a formato por nombre (sumando duplicados)
             modificaciones_por_nombre = {}
             
@@ -786,7 +809,8 @@ class Carrito(ttk.Frame):
                     else:
                         modificaciones_por_nombre[nombre] = cantidad_actual
             
-            item['modificaciones_ingredientes'] = modificaciones_por_nombre
+            # Actualizar el item usando el índice para asegurar que es el correcto
+            self.items[item_index]['modificaciones_ingredientes'] = modificaciones_por_nombre
             self.actualizar_vista()
             ventana.destroy()
         
@@ -830,8 +854,8 @@ class Carrito(ttk.Frame):
         ventana.transient(self.winfo_toplevel())
         ventana.grab_set()
         
-        # Frame principal con scroll si es necesario
-        frame_principal = ttk.Frame(ventana, padding=20)
+        # Frame principal
+        frame_principal = ttk.Frame(ventana, padding=15)
         frame_principal.pack(fill='both', expand=True)
         
         # Título
@@ -839,7 +863,7 @@ class Carrito(ttk.Frame):
             frame_principal,
             text="Confirmar Pedido",
             font=('Arial', 16, 'bold')
-        ).pack(pady=(0, 10))
+        ).pack(pady=(0, 5))
         
         # Número de orden
         ttk.Label(
@@ -847,46 +871,163 @@ class Carrito(ttk.Frame):
             text=f"Orden #{self.numero_orden:04d}",
             font=('Arial', 12, 'bold'),
             foreground='#3498db'
-        ).pack(pady=(0, 20))
+        ).pack(pady=(0, 15))
         
-        # Frame para información del cliente
-        frame_cliente = ttk.LabelFrame(frame_principal, text="Datos del Cliente", padding=10)
-        frame_cliente.pack(fill='x', pady=5)
+        # Frame para contener cliente y pago lado a lado
+        frame_columnas = ttk.Frame(frame_principal)
+        frame_columnas.pack(fill='both', expand=True, pady=5)
+        frame_columnas.columnconfigure(0, weight=1)
+        frame_columnas.columnconfigure(1, weight=1)
+        
+        # Frame para información del cliente (columna izquierda) - se ajusta dinámicamente
+        frame_cliente = ttk.LabelFrame(frame_columnas, text="Datos del Cliente", padding=10)
+        frame_cliente.grid(row=0, column=0, sticky='nsew', padx=(0, 5))
+        
+        # Frame para forma de pago (columna derecha) - se ajusta dinámicamente
+        frame_pago = ttk.LabelFrame(frame_columnas, text="Forma de Pago", padding=10)
+        frame_pago.grid(row=0, column=1, sticky='nsew', padx=(5, 0))
         
         # Campo nombre del cliente
         ttk.Label(frame_cliente, text="Nombre del Cliente:", font=('Arial', 9)).pack(anchor='w', pady=(0, 5))
-        entry_nombre = ttk.Entry(frame_cliente, width=40, font=('Arial', 10))
+        entry_nombre = ttk.Entry(frame_cliente, width=30, font=('Arial', 10))
         entry_nombre.pack(fill='x', pady=(0, 15))
         entry_nombre.focus()
         
+        # Variable para tipo de pedido (mutuamente excluyentes)
+        self.var_tipo_pedido = tk.StringVar(value="Servicio en mesa")
+        
+        # Frame para opciones de tipo de pedido
+        frame_tipo_pedido = ttk.Frame(frame_cliente)
+        frame_tipo_pedido.pack(fill='x', pady=(0, 5))
+        
+        ttk.Label(frame_tipo_pedido, text="Tipo de Pedido:", font=('Arial', 9)).pack(anchor='w', pady=(0, 5))
+        
+        # Opciones de tipo de pedido (radiobuttons)
+        opciones_tipo = [
+            ("Servicio en mesa", "Servicio en mesa"),
+            ("Domicilio", "Domicilio"),
+            ("Retira en puesto", "Retira en puesto")
+        ]
+        
+        for texto, valor in opciones_tipo:
+            ttk.Radiobutton(
+                frame_tipo_pedido,
+                text=texto,
+                variable=self.var_tipo_pedido,
+                value=valor,
+                command=lambda: self.toggle_tipo_pedido_inputs()
+            ).pack(anchor='w', pady=2)
+        
         # Frame para input de domicilio (inicialmente oculto)
         frame_domicilio = ttk.Frame(frame_cliente)
+        ttk.Label(frame_domicilio, text="Dirección:", font=('Arial', 9)).pack(anchor='w', pady=(5, 5))
+        entry_domicilio = ttk.Entry(frame_domicilio, width=30, font=('Arial', 10))
+        entry_domicilio.pack(fill='x', pady=(0, 5))
         
-        ttk.Label(frame_domicilio, text="Dirección:", font=('Arial', 9)).pack(anchor='w', pady=(0, 5))
-        entry_domicilio = ttk.Entry(frame_domicilio, width=40, font=('Arial', 10))
-        entry_domicilio.pack(fill='x')
+        # Campo de hora estimada para domicilio (dos inputs separados)
+        frame_hora_estimada = ttk.Frame(frame_domicilio)
+        ttk.Label(frame_domicilio, text="Hora estimada:", font=('Arial', 9)).pack(anchor='w', pady=(5, 5))
         
-        # Ocultar inicialmente el frame de domicilio
+        entry_hora_estimada_h = ttk.Entry(frame_hora_estimada, width=5, font=('Arial', 10), justify='center')
+        entry_hora_estimada_h.pack(side='left')
+        ttk.Label(frame_hora_estimada, text=":", font=('Arial', 12, 'bold')).pack(side='left', padx=2)
+        entry_hora_estimada_m = ttk.Entry(frame_hora_estimada, width=5, font=('Arial', 10), justify='center')
+        entry_hora_estimada_m.pack(side='left')
+        
+        # Placeholders
+        entry_hora_estimada_h.insert(0, "HH")
+        entry_hora_estimada_h.config(foreground='gray')
+        entry_hora_estimada_m.insert(0, "MM")
+        entry_hora_estimada_m.config(foreground='gray')
+        
+        def on_focus_in_hora_estimada_h(event):
+            if entry_hora_estimada_h.get() == "HH":
+                entry_hora_estimada_h.delete(0, tk.END)
+                entry_hora_estimada_h.config(foreground='black')
+        
+        def on_focus_out_hora_estimada_h(event):
+            if not entry_hora_estimada_h.get() or entry_hora_estimada_h.get().strip() == "":
+                entry_hora_estimada_h.delete(0, tk.END)
+                entry_hora_estimada_h.insert(0, "HH")
+                entry_hora_estimada_h.config(foreground='gray')
+        
+        def on_focus_in_hora_estimada_m(event):
+            if entry_hora_estimada_m.get() == "MM":
+                entry_hora_estimada_m.delete(0, tk.END)
+                entry_hora_estimada_m.config(foreground='black')
+        
+        def on_focus_out_hora_estimada_m(event):
+            if not entry_hora_estimada_m.get() or entry_hora_estimada_m.get().strip() == "":
+                entry_hora_estimada_m.delete(0, tk.END)
+                entry_hora_estimada_m.insert(0, "MM")
+                entry_hora_estimada_m.config(foreground='gray')
+        
+        entry_hora_estimada_h.bind('<FocusIn>', on_focus_in_hora_estimada_h)
+        entry_hora_estimada_h.bind('<FocusOut>', on_focus_out_hora_estimada_h)
+        entry_hora_estimada_m.bind('<FocusIn>', on_focus_in_hora_estimada_m)
+        entry_hora_estimada_m.bind('<FocusOut>', on_focus_out_hora_estimada_m)
+        
+        frame_hora_estimada.pack(anchor='w', pady=(0, 5))
+        
         frame_domicilio.pack_forget()
         
-        # Checkbox para pedido a domicilio
-        self.var_domicilio = tk.BooleanVar()
-        checkbox_domicilio = ttk.Checkbutton(
-            frame_cliente,
-            text="Pedido a domicilio",
-            variable=self.var_domicilio,
-            command=lambda: self.toggle_domicilio_input(frame_domicilio)
-        )
-        checkbox_domicilio.pack(anchor='w', pady=5)
+        # Frame para input de hora de retiro (inicialmente oculto)
+        frame_hora_retiro = ttk.Frame(frame_cliente)
+        ttk.Label(frame_hora_retiro, text="Hora de retiro (opcional):", font=('Arial', 9)).pack(anchor='w', pady=(5, 5))
+        
+        frame_hora_retiro_inputs = ttk.Frame(frame_hora_retiro)
+        entry_hora_retiro_h = ttk.Entry(frame_hora_retiro_inputs, width=5, font=('Arial', 10), justify='center')
+        entry_hora_retiro_h.pack(side='left')
+        ttk.Label(frame_hora_retiro_inputs, text=":", font=('Arial', 12, 'bold')).pack(side='left', padx=2)
+        entry_hora_retiro_m = ttk.Entry(frame_hora_retiro_inputs, width=5, font=('Arial', 10), justify='center')
+        entry_hora_retiro_m.pack(side='left')
+        
+        # Placeholders
+        entry_hora_retiro_h.insert(0, "HH")
+        entry_hora_retiro_h.config(foreground='gray')
+        entry_hora_retiro_m.insert(0, "MM")
+        entry_hora_retiro_m.config(foreground='gray')
+        
+        def on_focus_in_hora_retiro_h(event):
+            if entry_hora_retiro_h.get() == "HH":
+                entry_hora_retiro_h.delete(0, tk.END)
+                entry_hora_retiro_h.config(foreground='black')
+        
+        def on_focus_out_hora_retiro_h(event):
+            if not entry_hora_retiro_h.get() or entry_hora_retiro_h.get().strip() == "":
+                entry_hora_retiro_h.delete(0, tk.END)
+                entry_hora_retiro_h.insert(0, "HH")
+                entry_hora_retiro_h.config(foreground='gray')
+        
+        def on_focus_in_hora_retiro_m(event):
+            if entry_hora_retiro_m.get() == "MM":
+                entry_hora_retiro_m.delete(0, tk.END)
+                entry_hora_retiro_m.config(foreground='black')
+        
+        def on_focus_out_hora_retiro_m(event):
+            if not entry_hora_retiro_m.get() or entry_hora_retiro_m.get().strip() == "":
+                entry_hora_retiro_m.delete(0, tk.END)
+                entry_hora_retiro_m.insert(0, "MM")
+                entry_hora_retiro_m.config(foreground='gray')
+        
+        entry_hora_retiro_h.bind('<FocusIn>', on_focus_in_hora_retiro_h)
+        entry_hora_retiro_h.bind('<FocusOut>', on_focus_out_hora_retiro_h)
+        entry_hora_retiro_m.bind('<FocusIn>', on_focus_in_hora_retiro_m)
+        entry_hora_retiro_m.bind('<FocusOut>', on_focus_out_hora_retiro_m)
+        
+        frame_hora_retiro_inputs.pack(anchor='w')
+        frame_hora_retiro.pack_forget()
         
         # Guardar referencias para acceso desde callbacks
         self.entry_domicilio = entry_domicilio
+        self.entry_hora_retiro_h = entry_hora_retiro_h
+        self.entry_hora_retiro_m = entry_hora_retiro_m
+        self.entry_hora_estimada_h = entry_hora_estimada_h
+        self.entry_hora_estimada_m = entry_hora_estimada_m
         self.frame_domicilio = frame_domicilio
+        self.frame_hora_retiro = frame_hora_retiro
         
-        # Frame para forma de pago
-        frame_pago = ttk.LabelFrame(frame_principal, text="Forma de Pago", padding=10)
-        frame_pago.pack(fill='x', pady=10)
-        
+        # Frame para forma de pago (columna derecha) - ya está creado en frame_columnas
         # Variable para forma de pago
         self.var_forma_pago = tk.StringVar(value="Efectivo")
         
@@ -907,7 +1048,7 @@ class Carrito(ttk.Frame):
         
         # Frame para el total
         frame_total = ttk.Frame(frame_principal)
-        frame_total.pack(pady=(10, 5))
+        frame_total.pack(pady=(12, 8))
         
         # Calcular y mostrar el total
         total = self.calcular_total()
@@ -920,7 +1061,7 @@ class Carrito(ttk.Frame):
         
         # Frame para botones
         frame_botones = ttk.Frame(frame_principal)
-        frame_botones.pack(pady=15)
+        frame_botones.pack(pady=10)
         
         # Botón Cancelar (usando tk.Button para mejor control de hover) - PRIMERO
         btn_cancelar = tk.Button(
@@ -950,7 +1091,15 @@ class Carrito(ttk.Frame):
         btn_aceptar = tk.Button(
             frame_botones,
             text="Aceptar",
-            command=lambda: self.procesar_confirmacion(ventana, entry_nombre.get(), entry_domicilio.get()),
+            command=lambda: self.procesar_confirmacion(
+                ventana, 
+                entry_nombre.get(), 
+                entry_domicilio.get(),
+                entry_hora_retiro_h.get(),
+                entry_hora_retiro_m.get(),
+                entry_hora_estimada_h.get(),
+                entry_hora_estimada_m.get()
+            ),
             width=15,
             bg='#27ae60',
             fg='white',
@@ -970,20 +1119,31 @@ class Carrito(ttk.Frame):
         btn_aceptar.bind('<Enter>', on_enter_aceptar)
         btn_aceptar.bind('<Leave>', on_leave_aceptar)
         
+        # Inicializar el estado de los inputs según el tipo de pedido por defecto
+        self.toggle_tipo_pedido_inputs()
+        
         # Centrar la ventana en la pantalla
         ventana.update_idletasks()
         x = (ventana.winfo_screenwidth() // 2) - (ventana.winfo_width() // 2)
         y = (ventana.winfo_screenheight() // 2) - (ventana.winfo_height() // 2)
         ventana.geometry(f"+{x}+{y}")
     
-    def toggle_domicilio_input(self, frame_domicilio):
-        """Muestra u oculta el input de domicilio según el checkbox"""
-        if self.var_domicilio.get():
-            frame_domicilio.pack(fill='x', pady=(5, 0), before=None)
-        else:
-            frame_domicilio.pack_forget()
+    def toggle_tipo_pedido_inputs(self):
+        """Muestra u oculta los inputs según el tipo de pedido seleccionado"""
+        tipo_pedido = self.var_tipo_pedido.get()
+        
+        # Ocultar todos los frames primero
+        self.frame_domicilio.pack_forget()
+        self.frame_hora_retiro.pack_forget()
+        
+        # Mostrar el frame correspondiente según el tipo de pedido
+        if tipo_pedido == "Domicilio":
+            self.frame_domicilio.pack(fill='x', pady=(5, 0))
+        elif tipo_pedido == "Retira en puesto":
+            self.frame_hora_retiro.pack(fill='x', pady=(5, 0))
+        # "Servicio en mesa" no necesita inputs adicionales
     
-    def procesar_confirmacion(self, ventana, nombre_cliente, domicilio):
+    def procesar_confirmacion(self, ventana, nombre_cliente, domicilio, hora_retiro_h, hora_retiro_m, hora_estimada_h, hora_estimada_m):
         """Procesa la confirmación del pedido"""
         # Validar que se haya ingresado el nombre del cliente
         if not nombre_cliente or not nombre_cliente.strip():
@@ -993,17 +1153,38 @@ class Carrito(ttk.Frame):
             )
             return
         
-        # Validar domicilio si es pedido a domicilio
-        if self.var_domicilio.get():
+        # Obtener tipo de pedido seleccionado
+        tipo_pedido = self.var_tipo_pedido.get()
+        
+        # Validar campos según el tipo de pedido
+        if tipo_pedido == "Domicilio":
             if not domicilio or not domicilio.strip():
                 messagebox.showwarning(
                     "Campo Requerido",
                     "Por favor, ingrese la dirección de entrega."
                 )
                 return
-        
-        # Obtener tipo de pedido
-        tipo_pedido = "Domicilio" if self.var_domicilio.get() else "Mesa/Llevar"
+            domicilio_final = domicilio.strip()
+            # La hora estimada no es obligatoria, pero si está ingresada y no es el placeholder, la guardamos
+            if hora_estimada_h and hora_estimada_h.strip() and hora_estimada_h.strip() != "HH" and \
+               hora_estimada_m and hora_estimada_m.strip() and hora_estimada_m.strip() != "MM":
+                hora_estimada_final = f"{hora_estimada_h.strip()}:{hora_estimada_m.strip()}"
+            else:
+                hora_estimada_final = None
+            hora_retiro_final = None
+        elif tipo_pedido == "Retira en puesto":
+            # La hora no es obligatoria, pero si está ingresada y no es el placeholder, la guardamos
+            if hora_retiro_h and hora_retiro_h.strip() and hora_retiro_h.strip() != "HH" and \
+               hora_retiro_m and hora_retiro_m.strip() and hora_retiro_m.strip() != "MM":
+                hora_retiro_final = f"{hora_retiro_h.strip()}:{hora_retiro_m.strip()}"
+            else:
+                hora_retiro_final = None
+            domicilio_final = None
+            hora_estimada_final = None
+        else:  # "Servicio en mesa"
+            domicilio_final = None
+            hora_retiro_final = None
+            hora_estimada_final = None
         
         # Obtener forma de pago
         forma_pago = self.var_forma_pago.get()
@@ -1014,7 +1195,9 @@ class Carrito(ttk.Frame):
             'numero': self.numero_orden,
             'nombre_cliente': nombre_cliente.strip(),
             'tipo': tipo_pedido,
-            'domicilio': domicilio.strip() if self.var_domicilio.get() else None,
+            'domicilio': domicilio_final,
+            'hora_retiro': hora_retiro_final,
+            'hora_estimada': hora_estimada_final,
             'forma_pago': forma_pago,
             'items': self.items.copy(),
             'total': total
@@ -1077,7 +1260,7 @@ class Carrito(ttk.Frame):
         """Muestra una ventana de confirmación para borrar el carrito"""
         ventana = tk.Toplevel(self)
         ventana.title("Confirmar Borrado")
-        ventana.geometry("350x150")
+        ventana.geometry("450x200")
         ventana.resizable(False, False)
         
         # Centrar la ventana
@@ -1085,68 +1268,44 @@ class Carrito(ttk.Frame):
         ventana.grab_set()
         
         # Frame principal
-        frame_principal = ttk.Frame(ventana, padding=20)
+        frame_principal = ttk.Frame(ventana, padding=30)
         frame_principal.pack(fill='both', expand=True)
         
         # Mensaje de confirmación
         ttk.Label(
             frame_principal,
             text="¿Está seguro de borrar todo el carrito?",
-            font=('Arial', 12),
+            font=('Arial', 13, 'bold'),
             justify='center'
-        ).pack(pady=10)
+        ).pack(pady=(10, 5))
         
         ttk.Label(
             frame_principal,
             text="Esta acción no se puede deshacer.",
-            font=('Arial', 9),
+            font=('Arial', 10),
             foreground='gray',
             justify='center'
-        ).pack(pady=5)
+        ).pack(pady=(0, 20))
         
-        # Frame para botones
+        # Frame para botones (centrados y con mejor espaciado)
         frame_botones = ttk.Frame(frame_principal)
-        frame_botones.pack(pady=15)
+        frame_botones.pack(pady=10)
         
-        # Botón Confirmar (usando tk.Button para mejor compatibilidad de estilos)
-        btn_confirmar = tk.Button(
-            frame_botones,
-            text="Sí, Borrar",
-            command=lambda: self.borrar_carrito_completo(ventana),
-            width=15,
-            bg='#e74c3c',
-            fg='white',
-            font=('Arial', 10),
-            relief='flat',
-            cursor='hand2',
-            activebackground='#ec7063',
-            activeforeground='white'
-        )
-        btn_confirmar.pack(side='left', padx=5)
-        
-        # Configurar hover para botón Confirmar borrado (rojo clarito)
-        def on_enter_confirmar_borrar(event):
-            btn_confirmar.config(bg='#ec7063')
-        def on_leave_confirmar_borrar(event):
-            btn_confirmar.config(bg='#e74c3c')
-        btn_confirmar.bind('<Enter>', on_enter_confirmar_borrar)
-        btn_confirmar.bind('<Leave>', on_leave_confirmar_borrar)
-        
-        # Botón Cancelar (usando tk.Button para mejor compatibilidad de estilos)
+        # Botón Cancelar (izquierda)
         btn_cancelar = tk.Button(
             frame_botones,
             text="Cancelar",
             command=ventana.destroy,
-            width=15,
+            width=18,
             bg='#95a5a6',
             fg='white',
-            font=('Arial', 10),
+            font=('Arial', 10, 'bold'),
             relief='flat',
             cursor='hand2',
             activebackground='#7f8c8d',
             activeforeground='white'
         )
-        btn_cancelar.pack(side='left', padx=5)
+        btn_cancelar.pack(side='left', padx=10)
         
         # Configurar hover para botón Cancelar
         def on_enter_cancelar_borrar(event):
@@ -1155,6 +1314,30 @@ class Carrito(ttk.Frame):
             btn_cancelar.config(bg='#95a5a6')
         btn_cancelar.bind('<Enter>', on_enter_cancelar_borrar)
         btn_cancelar.bind('<Leave>', on_leave_cancelar_borrar)
+        
+        # Botón Confirmar (derecha)
+        btn_confirmar = tk.Button(
+            frame_botones,
+            text="Sí, Borrar",
+            command=lambda: self.borrar_carrito_completo(ventana),
+            width=18,
+            bg='#e74c3c',
+            fg='white',
+            font=('Arial', 10, 'bold'),
+            relief='flat',
+            cursor='hand2',
+            activebackground='#ec7063',
+            activeforeground='white'
+        )
+        btn_confirmar.pack(side='left', padx=10)
+        
+        # Configurar hover para botón Confirmar borrado (rojo clarito)
+        def on_enter_confirmar_borrar(event):
+            btn_confirmar.config(bg='#ec7063')
+        def on_leave_confirmar_borrar(event):
+            btn_confirmar.config(bg='#e74c3c')
+        btn_confirmar.bind('<Enter>', on_enter_confirmar_borrar)
+        btn_confirmar.bind('<Leave>', on_leave_confirmar_borrar)
         
         # Centrar la ventana en la pantalla
         ventana.update_idletasks()

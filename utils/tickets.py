@@ -173,24 +173,29 @@ def formatear_texto_centrado(texto, ancho=48):
     return ' ' * espacios_izq + texto + ' ' * espacios_der
 
 
-def formatear_linea_producto(nombre, cantidad, precio, ancho=48):
+def formatear_linea_producto(nombre, cantidad, precio_total, ancho=48):
     """
-    Formatea una línea de producto con nombre a la izquierda y precio a la derecha
+    Formatea una línea de producto: cantidad + nombre a la izquierda, precio total a la derecha
+    Formato: cantidad Nombre                    $precio_total
     ancho: ancho total en caracteres
+    
+    Nota: precio_total ya debe incluir la multiplicación por cantidad
     """
-    nombre_cantidad = f"{nombre} x{cantidad}"
-    precio_str = f"${precio:,.2f}"
+    cantidad_nombre = f"{cantidad} {nombre}"
+    precio_str = f"${precio_total:,.0f}"
     
-    # Calcular espacios necesarios
-    espacio_total = ancho - len(nombre_cantidad) - len(precio_str)
+    # Calcular espacios para alinear precio exactamente al final (ancho - len(precio_str))
+    # Esto asegura que todos los precios terminen en la misma columna
+    espacios_necesarios = ancho - len(cantidad_nombre) - len(precio_str)
     
-    if espacio_total < 1:
+    if espacios_necesarios < 1:
         # Si no cabe, truncar nombre
-        max_nombre = ancho - len(precio_str) - 10  # 10 para " x1" y espacios
-        nombre_cantidad = nombre_cantidad[:max_nombre] + "..."
-        espacio_total = ancho - len(nombre_cantidad) - len(precio_str)
+        max_nombre = ancho - len(precio_str) - len(str(cantidad)) - 2  # 2 para espacios
+        nombre_truncado = nombre[:max_nombre] + "..."
+        cantidad_nombre = f"{cantidad} {nombre_truncado}"
+        espacios_necesarios = ancho - len(cantidad_nombre) - len(precio_str)
     
-    return nombre_cantidad + ' ' * espacio_total + precio_str
+    return cantidad_nombre + ' ' * espacios_necesarios + precio_str
 
 
 def tiene_modificaciones_reales(producto, modificaciones):
@@ -220,48 +225,55 @@ def tiene_modificaciones_reales(producto, modificaciones):
     return False
 
 
-def formatear_linea_ingrediente(nombre_ing, cantidad_mod, es_extra, ajuste, ancho=48):
+def formatear_linea_ingrediente(nombre_ing, cantidad_mod, es_extra, precio_unitario, cantidad_items, ancho=48):
     """
-    Formatea una línea de ingrediente modificado con precio alineado a la derecha
-    Formato:   + Nombre xCant              +$Precio
-    o:         - Nombre                    -$Precio
+    Formatea una línea de ingrediente modificado
+    Formato para extra simple:   Extra Nombre                    +$Precio
+    Formato para extra múltiple: cantidad Extra Nombre           +$total
+    Formato para sin:            Sin Nombre                       -$Precio
     
     Args:
         nombre_ing: Nombre del ingrediente
         cantidad_mod: Cantidad modificada (extras o quitados)
         es_extra: True si es extra, False si es quitado
-        ajuste: Precio del ajuste (positivo para extra, negativo para quitar)
+        precio_unitario: Precio unitario del ajuste (por extra o por quitar)
+        cantidad_items: Cantidad de items del producto (para calcular total)
         ancho: Ancho total en caracteres
     
     Returns:
-        str: Línea formateada con precio alineado a la derecha
+        str: Línea formateada con precio alineado exactamente a la derecha (misma posición que precios base)
     """
-    # Prefijo: "  + " o "  - "
-    prefijo = "  + " if es_extra else "  - "
-    
-    # Construir parte izquierda: prefijo + nombre + cantidad (si aplica)
-    parte_izq = prefijo + nombre_ing
-    if cantidad_mod > 1:
-        parte_izq += f" x{cantidad_mod}"
-    
-    # Parte derecha: precio con signo
+    # Calcular precio total
     if es_extra:
-        precio_str = f"+${abs(ajuste):,.2f}"
+        precio_total = precio_unitario * cantidad_mod * cantidad_items
+        signo = "+"
     else:
-        precio_str = f"-${abs(ajuste):,.2f}"
+        precio_total = precio_unitario * cantidad_mod * cantidad_items
+        signo = "-"
     
-    # Columna fija para precios: 38-48 (10 caracteres)
-    columna_precio_inicio = 38
-    max_ancho_parte_izq = columna_precio_inicio - 1
+    # Formato especial para extras múltiples
+    if es_extra and cantidad_mod > 1:
+        # Formato simple en una línea: "cantidad Extra Nombre +$total"
+        parte_izq = f"  {cantidad_mod} Extra {nombre_ing}"
+        precio_str = f"{signo}${precio_total:,.0f}"
+    else:
+        # Formato simple: "Extra Nombre" o "Sin Nombre"
+        prefijo = "  Extra " if es_extra else "  Sin "
+        parte_izq = prefijo + nombre_ing
+        precio_str = f"{signo}${abs(precio_total):,.0f}"
     
-    # Si la parte izquierda es muy larga, truncar
-    if len(parte_izq) > max_ancho_parte_izq:
-        parte_izq = parte_izq[:max_ancho_parte_izq - 3] + "..."
+    # Calcular espacios para alinear precio exactamente al final (ancho - len(precio_str))
+    # Esto asegura que todos los precios terminen en la misma columna que los precios base
+    espacios_necesarios = ancho - len(parte_izq) - len(precio_str)
     
-    # Calcular espacios para alinear precio a la derecha
-    espacios = max(1, columna_precio_inicio - len(parte_izq))
+    if espacios_necesarios < 1:
+        # Si no cabe, truncar parte izquierda
+        max_ancho_parte_izq = ancho - len(precio_str) - 1
+        if len(parte_izq) > max_ancho_parte_izq:
+            parte_izq = parte_izq[:max_ancho_parte_izq - 3] + "..."
+        espacios_necesarios = ancho - len(parte_izq) - len(precio_str)
     
-    return parte_izq + ' ' * espacios + precio_str
+    return parte_izq + ' ' * espacios_necesarios + precio_str
 
 
 def formatear_linea_subtotal(precio_unitario, cantidad, subtotal, ancho=48):
@@ -279,9 +291,9 @@ def formatear_linea_subtotal(precio_unitario, cantidad, subtotal, ancho=48):
     Returns:
         str: Línea formateada
     """
-    precio_str = f"${precio_unitario:,.2f}"
+    precio_str = f"${precio_unitario:,.0f}"
     cantidad_str = f"x {cantidad}"
-    subtotal_str = f"=     ${subtotal:,.2f}"
+    subtotal_str = f"=     ${subtotal:,.0f}"
     
     # Calcular espacios para alinear precio a la derecha
     # Estructura: espacios_izq + precio_str + espacios1 + cantidad_str + espacios2 + subtotal_str
@@ -347,8 +359,12 @@ def imprimir_ticket_escpos(pedido_info, tipo_ticket):
         printer.set(align='left', font='a', width=1, height=1, bold=False)
         printer.text(f"Cliente: {pedido_info['nombre_cliente']}\n")
         
-        # Domicilio si existe
-        if pedido_info.get('domicilio'):
+        # Tipo de pedido y información adicional
+        tipo_pedido = pedido_info.get('tipo', 'Servicio en mesa')
+        printer.text(f"{tipo_pedido}\n")
+        
+        # Domicilio si es pedido a domicilio
+        if tipo_pedido == "Domicilio" and pedido_info.get('domicilio'):
             domicilio = pedido_info['domicilio']
             # Si el domicilio es muy largo, dividirlo en líneas
             if len(domicilio) > ancho_caracteres - 12:
@@ -363,6 +379,14 @@ def imprimir_ticket_escpos(pedido_info, tipo_ticket):
                 printer.text(linea + "\n")
             else:
                 printer.text(f"Domicilio: {domicilio}\n")
+            
+            # Hora estimada si existe
+            if pedido_info.get('hora_estimada'):
+                printer.text(f"Hora estimada: {pedido_info['hora_estimada']}\n")
+        
+        # Hora de retiro si es "Retira en puesto"
+        if tipo_pedido == "Retira en puesto" and pedido_info.get('hora_retiro'):
+            printer.text(f"Hora de retiro: {pedido_info['hora_retiro']}\n")
         
         # Separador
         printer.text("-" * ancho_caracteres + "\n")
@@ -388,10 +412,15 @@ def imprimir_ticket_escpos(pedido_info, tipo_ticket):
             # Verificar si tiene modificaciones reales
             tiene_modificaciones = tiene_modificaciones_reales(producto, modificaciones)
             
+            # Precio base del producto (sin modificaciones)
+            precio_base = producto.get('precio', 0.0)
+            
             if tiene_modificaciones:
                 # Formato especial para productos editados
-                # Mostrar solo el nombre del producto
-                printer.text(nombre + "\n")
+                # Mostrar: cantidad + nombre + precio total (precio_base * cantidad)
+                precio_total = precio_base * cantidad
+                linea_producto = formatear_linea_producto(nombre, cantidad, precio_total, ancho_caracteres)
+                printer.text(linea_producto + "\n")
                 
                 # Mostrar modificaciones de ingredientes
                 ingredientes = producto.get('ingredientes', [])
@@ -406,26 +435,21 @@ def imprimir_ticket_escpos(pedido_info, tipo_ticket):
                         if cantidad_actual > cantidad_base:
                             # Extras agregados
                             extras = cantidad_actual - cantidad_base
-                            ajuste = extras * precio_extra
                             texto_ing = formatear_linea_ingrediente(
-                                nombre_ing, extras, True, ajuste, ancho_caracteres
+                                nombre_ing, extras, True, precio_extra, cantidad, ancho_caracteres
                             )
                             printer.text(texto_ing + "\n")
                         elif cantidad_actual < cantidad_base:
                             # Ingredientes quitados
                             quitados = cantidad_base - cantidad_actual
-                            ajuste = quitados * precio_resta
                             texto_ing = formatear_linea_ingrediente(
-                                nombre_ing, quitados, False, ajuste, ancho_caracteres
+                                nombre_ing, quitados, False, precio_resta, cantidad, ancho_caracteres
                             )
                             printer.text(texto_ing + "\n")
-                
-                # Mostrar línea de subtotal: precio_unitario x cantidad = subtotal
-                linea_subtotal = formatear_linea_subtotal(precio_unitario, cantidad, subtotal, ancho_caracteres)
-                printer.text(linea_subtotal + "\n")
             else:
-                # Formato normal para productos sin editar
-                linea = formatear_linea_producto(nombre, cantidad, subtotal, ancho_caracteres)
+                # Formato normal para productos sin editar: cantidad + nombre + precio total (precio_base * cantidad)
+                precio_total = precio_base * cantidad
+                linea = formatear_linea_producto(nombre, cantidad, precio_total, ancho_caracteres)
                 printer.text(linea + "\n")
         
         # Separador
@@ -436,7 +460,7 @@ def imprimir_ticket_escpos(pedido_info, tipo_ticket):
         printer.set(align='left', bold=True)
         printer.text("TOTAL A PAGAR:")
         printer.set(align='right', bold=True)
-        printer.text(f"${total:,.2f}\n")
+        printer.text(f"${total:,.0f}\n")
         
         # Separador
         printer.set(align='center')
@@ -527,8 +551,20 @@ def guardar_ticket_texto(pedido_info, tipo_ticket):
     contenido.append("=" * ancho_caracteres)
     contenido.append(f"Cliente: {pedido_info['nombre_cliente']}")
     
-    if pedido_info.get('domicilio'):
+    # Tipo de pedido
+    tipo_pedido = pedido_info.get('tipo', 'Servicio en mesa')
+    contenido.append(f"{tipo_pedido}")
+    
+    # Domicilio si es pedido a domicilio
+    if tipo_pedido == "Domicilio" and pedido_info.get('domicilio'):
         contenido.append(f"Domicilio: {pedido_info['domicilio']}")
+        # Hora estimada si existe
+        if pedido_info.get('hora_estimada'):
+            contenido.append(f"Hora estimada: {pedido_info['hora_estimada']}")
+    
+    # Hora de retiro si es "Retira en puesto"
+    if tipo_pedido == "Retira en puesto" and pedido_info.get('hora_retiro'):
+        contenido.append(f"Hora de retiro: {pedido_info['hora_retiro']}")
     
     contenido.append("-" * ancho_caracteres)
     contenido.append("PEDIDO:")
@@ -545,13 +581,18 @@ def guardar_ticket_texto(pedido_info, tipo_ticket):
         precio_unitario = calcular_precio_con_ingredientes(producto, modificaciones)
         subtotal = precio_unitario * cantidad
         
+        # Precio base del producto (sin modificaciones)
+        precio_base = producto.get('precio', 0.0)
+        
         # Verificar si tiene modificaciones reales
         tiene_modificaciones = tiene_modificaciones_reales(producto, modificaciones)
         
         if tiene_modificaciones:
             # Formato especial para productos editados
-            # Mostrar solo el nombre del producto
-            contenido.append(nombre)
+            # Mostrar: cantidad + nombre + precio total (precio_base * cantidad)
+            precio_total = precio_base * cantidad
+            linea_producto = formatear_linea_producto(nombre, cantidad, precio_total, ancho_caracteres)
+            contenido.append(linea_producto)
             
             # Mostrar modificaciones de ingredientes
             ingredientes = producto.get('ingredientes', [])
@@ -566,31 +607,26 @@ def guardar_ticket_texto(pedido_info, tipo_ticket):
                     if cantidad_actual > cantidad_base:
                         # Extras agregados
                         extras = cantidad_actual - cantidad_base
-                        ajuste = extras * precio_extra
                         texto_ing = formatear_linea_ingrediente(
-                            nombre_ing, extras, True, ajuste, ancho_caracteres
+                            nombre_ing, extras, True, precio_extra, cantidad, ancho_caracteres
                         )
                         contenido.append(texto_ing)
                     elif cantidad_actual < cantidad_base:
                         # Ingredientes quitados
                         quitados = cantidad_base - cantidad_actual
-                        ajuste = quitados * precio_resta
                         texto_ing = formatear_linea_ingrediente(
-                            nombre_ing, quitados, False, ajuste, ancho_caracteres
+                            nombre_ing, quitados, False, precio_resta, cantidad, ancho_caracteres
                         )
                         contenido.append(texto_ing)
-            
-            # Mostrar línea de subtotal: precio_unitario x cantidad = subtotal
-            linea_subtotal = formatear_linea_subtotal(precio_unitario, cantidad, subtotal, ancho_caracteres)
-            contenido.append(linea_subtotal)
         else:
-            # Formato normal para productos sin editar
-            linea = formatear_linea_producto(nombre, cantidad, subtotal, ancho_caracteres)
+            # Formato normal para productos sin editar: cantidad + nombre + precio total (precio_base * cantidad)
+            precio_total = precio_base * cantidad
+            linea = formatear_linea_producto(nombre, cantidad, precio_total, ancho_caracteres)
             contenido.append(linea)
     
     contenido.append("-" * ancho_caracteres)
     total = pedido_info['total']
-    linea_total = "TOTAL A PAGAR:" + " " * (ancho_caracteres - len("TOTAL A PAGAR:") - len(f"${total:,.2f}")) + f"${total:,.2f}"
+    linea_total = "TOTAL A PAGAR:" + " " * (ancho_caracteres - len("TOTAL A PAGAR:") - len(f"${total:,.0f}")) + f"${total:,.0f}"
     contenido.append(linea_total)
     contenido.append("-" * ancho_caracteres)
     contenido.append(f"Forma de Pago: {pedido_info['forma_pago']}")

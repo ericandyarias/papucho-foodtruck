@@ -16,12 +16,6 @@
               "precio_resta": 400.0
             },
             {
-              "nombre": "Medallón",
-              "cantidad_base": 1,
-              "precio_extra": 900.0,
-              "precio_resta": 900.0
-            },
-            {
               "nombre": "Lechuga",
               "cantidad_base": 1,
               "precio_extra": 500.0,
@@ -32,6 +26,12 @@
               "cantidad_base": 1,
               "precio_extra": 500.0,
               "precio_resta": 500.0
+            },
+            {
+              "nombre": "Medallon",
+              "cantidad_base": 1,
+              "precio_extra": 900.0,
+              "precio_resta": 900.0
             }
           ]
         },

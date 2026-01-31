@@ -90,9 +90,9 @@ class AplicacionCaja:
         self.frame_principal.grid(row=1, column=0, columnspan=3, sticky='nsew', padx=5, pady=5)
         
         # Configurar grid del frame principal
-        self.frame_principal.columnconfigure(1, weight=4)  # Selección (centro) más ancho
+        self.frame_principal.columnconfigure(1, weight=3)  # Selección (centro) - reducido
         self.frame_principal.columnconfigure(0, weight=2)  # Navegador
-        self.frame_principal.columnconfigure(2, weight=1)  # Carrito (más pequeño)
+        self.frame_principal.columnconfigure(2, weight=2)  # Carrito - más ancho
         self.frame_principal.rowconfigure(0, weight=1)
         
         # Navegador (columna 0)
