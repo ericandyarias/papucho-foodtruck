@@ -1,0 +1,28 @@
+================================================
+               PAPUCHO FOODTRUCK                
+================================================
+                  Orden #0188                   
+================================================
+Cliente: Eric Andy Arias
+Domicilio
+Domicilio: Rivadavia 501
+Hora estimada: 23:00
+------------------------------------------------
+PEDIDO:
+------------------------------------------------
+2 Hamburguesa Completa                   $17,600
+  Extra Paleta                             +$600
+1 Hamburguesa Simple                      $7,800
+  Sin Paleta                               -$300
+1 Gaseosa Coca, Fanta o Sprite 500ml      $2,500
+3 Hamburguesa Completa                   $26,400
+  Sin Lechuga                            -$1,500
+1 Papas Fritas Simple                     $3,800
+------------------------------------------------
+TOTAL A PAGAR:                           $56,900
+------------------------------------------------
+Forma de Pago: Efectivo
+================================================
+                 === COCINA ===                 
+                01/02/2026 23:06                
+================================================

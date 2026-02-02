@@ -10,6 +10,7 @@ import sys
 # Agregar el directorio raíz al path para importar módulos
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from utils.productos import cargar_productos
+from utils.imagenes import cargar_imagen_tkinter
 
 
 class Seleccion(ttk.Frame):
@@ -19,6 +20,7 @@ class Seleccion(ttk.Frame):
         super().__init__(parent)
         self.productos_data = self.cargar_productos()
         self.categoria_actual = None
+        self._imagenes_productos = []  # Lista para mantener referencias de imágenes
         self.configurar_seleccion()
     
     def recargar_productos(self):
@@ -158,6 +160,9 @@ class Seleccion(ttk.Frame):
         for widget in self.frame_productos.winfo_children():
             widget.destroy()
         
+        # Limpiar referencias de imágenes anteriores
+        self._imagenes_productos.clear()
+        
         # Actualizar el scrollregion del canvas para limpiar cualquier artefacto visual
         self.canvas_productos.update_idletasks()
         self.canvas_productos.configure(scrollregion=self.canvas_productos.bbox("all"))
@@ -175,15 +180,47 @@ class Seleccion(ttk.Frame):
         # Configurar grid del frame de productos para que ocupen todo el ancho
         self.frame_productos.columnconfigure(0, weight=1)
         
+        # Tamaño fijo para las imágenes (cuadrado 80x80 píxeles)
+        TAMANO_IMAGEN = 80
+        
         # Mostrar productos
         for idx, producto in enumerate(categoria.get("productos", [])):
             frame_producto = ttk.Frame(self.frame_productos, relief='raised', borderwidth=1)
             frame_producto.grid(row=idx, column=0, sticky='ew', padx=5, pady=5)
-            frame_producto.columnconfigure(0, weight=1)
+            frame_producto.columnconfigure(1, weight=1)  # Columna de información con peso
             
-            # Información del producto
+            # Frame para imagen (tamaño fijo a la izquierda)
+            frame_imagen = tk.Frame(frame_producto, width=TAMANO_IMAGEN, height=TAMANO_IMAGEN, bg='#d3d3d3', relief='sunken', borderwidth=1)
+            frame_imagen.grid(row=0, column=0, padx=5, pady=5, sticky='nw')
+            frame_imagen.grid_propagate(False)  # Mantener tamaño fijo
+            frame_imagen.pack_propagate(False)
+            
+            # Label para imagen (siempre ocupa el mismo espacio)
+            label_imagen = tk.Label(
+                frame_imagen,
+                text="Sin\nimagen",
+                font=('Arial', 8),
+                foreground='gray',
+                background='#d3d3d3',
+                anchor='center',
+                justify='center'
+            )
+            label_imagen.pack(fill='both', expand=True)
+            
+            # Cargar imagen si existe
+            ruta_imagen = producto.get("imagen")
+            imagen_producto = None
+            
+            if ruta_imagen:
+                imagen_tk = cargar_imagen_tkinter(ruta_imagen, TAMANO_IMAGEN, TAMANO_IMAGEN)
+                if imagen_tk:
+                    label_imagen.config(image=imagen_tk, text='', background='white')
+                    imagen_producto = imagen_tk
+                    self._imagenes_productos.append(imagen_producto)
+            
+            # Información del producto (se mueve a la derecha)
             info_frame = ttk.Frame(frame_producto)
-            info_frame.grid(row=0, column=0, sticky='ew', padx=10, pady=5)
+            info_frame.grid(row=0, column=1, sticky='ew', padx=10, pady=5)
             info_frame.columnconfigure(0, weight=1)
             
             ttk.Label(
@@ -212,7 +249,7 @@ class Seleccion(ttk.Frame):
                 text="➕ Agregar",
                 command=lambda p=producto: self.on_agregar_producto(p)
             )
-            btn_agregar.grid(row=0, column=1, padx=10, pady=5, sticky='e')
+            btn_agregar.grid(row=0, column=2, padx=10, pady=5, sticky='e')
     
     def on_agregar_producto(self, producto):
         """Callback cuando se agrega un producto al carrito"""

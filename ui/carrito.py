@@ -13,6 +13,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from utils.orden import leer_numero_orden, incrementar_orden
 from utils.tickets import generar_tickets_pedido
 from utils.productos import calcular_precio_con_ingredientes
+from utils.ingredientes import buscar_ingrediente_por_nombre
+from utils.imagenes import obtener_ruta_completa_imagen, cargar_imagen_tkinter
 
 
 class Carrito(ttk.Frame):
@@ -543,14 +545,14 @@ class Carrito(ttk.Frame):
         # Crear ventana modal (diseño más simple)
         ventana = tk.Toplevel(self)
         ventana.title(f"Editar Ingredientes - {producto['nombre']}")
-        ventana.geometry("550x650")
+        ventana.geometry("700x650")
         ventana.resizable(True, True)
         ventana.transient(self.winfo_toplevel())
         ventana.grab_set()
 
-        # Centrar ventana
+        # Centrar ventana un poco más a la izquierda
         ventana.update_idletasks()
-        x = (ventana.winfo_screenwidth() // 2) - (ventana.winfo_width() // 2)
+        x = (ventana.winfo_screenwidth() // 2) - (ventana.winfo_width() // 2) - 150
         y = (ventana.winfo_screenheight() // 2) - (ventana.winfo_height() // 2)
         ventana.geometry(f"+{x}+{y}")
 
@@ -635,8 +637,17 @@ class Carrito(ttk.Frame):
                 if isinstance(idx_var, int) and idx_var < len(ingredientes):
                     ingrediente = ingredientes[idx_var]
                     cantidad_base = ingrediente.get('cantidad_base', 1)
-                    precio_extra = ingrediente.get('precio_extra', 0.0)
-                    precio_resta = ingrediente.get('precio_resta', 0.0)
+                    nombre_ing = ingrediente.get('nombre', '')
+                    
+                    # Obtener precios desde ingredientes.json
+                    ingrediente_actualizado = buscar_ingrediente_por_nombre(nombre_ing)
+                    if ingrediente_actualizado:
+                        precio_extra = ingrediente_actualizado.get('precio_extra', 0.0)
+                        precio_resta = ingrediente_actualizado.get('precio_resta', 0.0)
+                    else:
+                        precio_extra = 0.0
+                        precio_resta = 0.0
+                    
                     cantidad_actual = var.get()
 
                     if cantidad_actual > cantidad_base:
@@ -678,8 +689,15 @@ class Carrito(ttk.Frame):
         for idx, ingrediente in enumerate(ingredientes):
             nombre = ingrediente.get('nombre', '')
             cantidad_base = ingrediente.get('cantidad_base', 1)
-            precio_extra = ingrediente.get('precio_extra', 0.0)
-            precio_resta = ingrediente.get('precio_resta', 0.0)
+            
+            # Obtener precios desde ingredientes.json (no desde el producto)
+            ingrediente_actualizado = buscar_ingrediente_por_nombre(nombre)
+            if ingrediente_actualizado:
+                precio_extra = ingrediente_actualizado.get('precio_extra', 0.0)
+                precio_resta = ingrediente_actualizado.get('precio_resta', 0.0)
+            else:
+                precio_extra = 0.0
+                precio_resta = 0.0
 
             # Obtener cantidad actual (o base si no hay modificación)
             cantidad_actual = modificaciones_actuales.get(nombre, cantidad_base)
@@ -691,18 +709,44 @@ class Carrito(ttk.Frame):
             # Frame para cada ingrediente (diseño simple)
             frame_ing = ttk.LabelFrame(frame_ingredientes, text=nombre, padding=10)
             frame_ing.grid(row=fila, column=columna, sticky='nsew', padx=5, pady=5)
-            frame_ing.columnconfigure(1, weight=1)
+            frame_ing.columnconfigure(2, weight=1)
 
             # Variable para la cantidad (usar índice para manejar duplicados)
             var_cantidad = tk.IntVar(value=cantidad_actual)
             variables_cantidad[idx] = var_cantidad
 
+            # Frame para la imagen del ingrediente (lado izquierdo)
+            frame_imagen = ttk.Frame(frame_ing)
+            frame_imagen.grid(row=0, column=0, rowspan=3, padx=(0, 10), sticky='ns')
+            
+            # Cargar imagen del ingrediente
+            imagen_ingrediente = None
+            if ingrediente_actualizado:
+                ruta_imagen_relativa = ingrediente_actualizado.get('imagen')
+                if ruta_imagen_relativa:
+                    ruta_imagen_completa = obtener_ruta_completa_imagen(ruta_imagen_relativa)
+                    if ruta_imagen_completa:
+                        imagen_ingrediente = cargar_imagen_tkinter(ruta_imagen_completa, 70, 70)
+            
+            # Label para mostrar la imagen (o placeholder si no hay imagen)
+            label_imagen = ttk.Label(
+                frame_imagen,
+                image=imagen_ingrediente,
+                text="📷" if not imagen_ingrediente else "",
+                compound='center',
+                anchor='center'
+            )
+            label_imagen.pack(expand=True)
+            # Mantener referencia a la imagen para evitar que se elimine por el garbage collector
+            if imagen_ingrediente:
+                label_imagen.image = imagen_ingrediente
+
             # Label cantidad
-            ttk.Label(frame_ing, text="Cantidad:").grid(row=0, column=0, padx=5, sticky='w')
+            ttk.Label(frame_ing, text="Cantidad:").grid(row=0, column=1, padx=5, sticky='w')
 
             # Frame para controles de cantidad
             frame_controles = ttk.Frame(frame_ing)
-            frame_controles.grid(row=0, column=1, sticky='w', padx=5)
+            frame_controles.grid(row=0, column=2, sticky='w', padx=5)
 
             # Botón menos
             btn_menos = ttk.Button(
@@ -733,16 +777,18 @@ class Carrito(ttk.Frame):
             if precio_resta > 0:
                 info_text += f" | Quitar: -${precio_resta:.2f}"
 
-            ttk.Label(
+            label_info = ttk.Label(
                 frame_ing,
                 text=info_text,
                 font=('Arial', 8),
-                foreground='black'
-            ).grid(row=1, column=0, columnspan=2, sticky='w', padx=5, pady=2)
+                foreground='black',
+                wraplength=250
+            )
+            label_info.grid(row=1, column=1, columnspan=2, sticky='ew', padx=5, pady=2)
 
             # Label impacto en precio
             label_impacto = ttk.Label(frame_ing, text="", font=('Arial', 9, 'bold'))
-            label_impacto.grid(row=2, column=0, columnspan=2, sticky='w', padx=5, pady=2)
+            label_impacto.grid(row=2, column=1, columnspan=2, sticky='w', padx=5, pady=2)
 
             # Callback para actualizar impacto y precio total
             def on_cambio_cantidad(*_args,
@@ -840,9 +886,9 @@ class Carrito(ttk.Frame):
         )
         btn_guardar.grid(row=0, column=1, padx=5, sticky='ew')
         
-        # Centrar ventana
+        # Centrar ventana un poco más a la izquierda
         ventana.update_idletasks()
-        x = (ventana.winfo_screenwidth() // 2) - (ventana.winfo_width() // 2)
+        x = (ventana.winfo_screenwidth() // 2) - (ventana.winfo_width() // 2) - 150
         y = (ventana.winfo_screenheight() // 2) - (ventana.winfo_height() // 2)
         ventana.geometry(f"+{x}+{y}")
     

@@ -83,7 +83,7 @@ def buscar_ingrediente_por_nombre(nombre):
     return None
 
 
-def agregar_ingrediente(nombre, categorias, precio_extra, precio_resta):
+def agregar_ingrediente(nombre, categorias, precio_extra, precio_resta, imagen=None):
     """Agrega un nuevo ingrediente"""
     data = cargar_ingredientes()
     
@@ -95,12 +95,16 @@ def agregar_ingrediente(nombre, categorias, precio_extra, precio_resta):
         "precio_resta": float(precio_resta)
     }
     
+    # Agregar imagen si se proporciona
+    if imagen:
+        nuevo_ingrediente["imagen"] = imagen
+    
     data.setdefault("ingredientes", []).append(nuevo_ingrediente)
     guardar_ingredientes(data)
     return nuevo_ingrediente
 
 
-def modificar_ingrediente(ingrediente_id, nombre, categorias, precio_extra, precio_resta):
+def modificar_ingrediente(ingrediente_id, nombre, categorias, precio_extra, precio_resta, imagen=None):
     """Modifica un ingrediente existente y actualiza el nombre en todos los productos que lo usan"""
     data = cargar_ingredientes()
     
@@ -115,6 +119,14 @@ def modificar_ingrediente(ingrediente_id, nombre, categorias, precio_extra, prec
             ingrediente["categorias"] = categorias if isinstance(categorias, list) else [categorias]
             ingrediente["precio_extra"] = float(precio_extra)
             ingrediente["precio_resta"] = float(precio_resta)
+            
+            # Actualizar imagen si se proporciona (None significa no cambiar, "" significa eliminar)
+            if imagen is not None:
+                if imagen:
+                    ingrediente["imagen"] = imagen
+                else:
+                    ingrediente.pop("imagen", None)
+            
             guardar_ingredientes(data)
             break
     

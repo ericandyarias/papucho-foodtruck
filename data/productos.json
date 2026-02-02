@@ -4,54 +4,6 @@
       "nombre": "Hamburguesas",
       "productos": [
         {
-          "id": 1,
-          "nombre": "Hamburguesa Completa",
-          "precio": 8800.0,
-          "descripcion": "Tomáte, lechuga, paleta, queso, huevo y fritas.",
-          "ingredientes": [
-            {
-              "nombre": "Lechuga",
-              "cantidad_base": 1,
-              "precio_extra": 500.0,
-              "precio_resta": 500.0
-            },
-            {
-              "nombre": "Pepinillos",
-              "cantidad_base": 1,
-              "precio_extra": 500.0,
-              "precio_resta": 500.0
-            },
-            {
-              "nombre": "Medallon",
-              "cantidad_base": 1,
-              "precio_extra": 900.0,
-              "precio_resta": 900.0
-            },
-            {
-              "nombre": "Tomate",
-              "cantidad_base": 1
-            }
-          ]
-        },
-        {
-          "id": 3,
-          "nombre": "Hamburguesa Simple",
-          "precio": 7800.0,
-          "descripcion": "Tomáte, lechuga y fritas.",
-          "ingredientes": [
-            {
-              "nombre": "Lechuga",
-              "cantidad_base": 1,
-              "precio_extra": 500.0,
-              "precio_resta": 500.0
-            },
-            {
-              "nombre": "Tomate",
-              "cantidad_base": 1
-            }
-          ]
-        },
-        {
           "id": 2,
           "nombre": "Hamburguesa J y Q",
           "precio": 7800.0,
@@ -80,30 +32,72 @@
           "nombre": "Hamburguesa Completa S/Papas",
           "precio": 7500.0,
           "descripcion": "Tomáte, lechuga, paleta, queso y huevo.",
-          "ingredientes": [
-            {
-              "nombre": "Tomate",
-              "cantidad_base": 1
-            }
-          ]
+          "ingredientes": []
         },
         {
           "id": 8,
           "nombre": "Hamburguesa Simple S/Papas",
           "precio": 6000.0,
           "descripcion": "Tomáte y lechuga.",
-          "ingredientes": [
-            {
-              "nombre": "Tomate",
-              "cantidad_base": 1
-            }
-          ]
+          "ingredientes": []
         },
         {
           "id": 9,
           "nombre": "Hamburguesa J y Q S/Papas",
           "precio": 6000.0,
           "descripcion": "Jamón y Queso."
+        },
+        {
+          "id": 1,
+          "nombre": "Hamburguesa Completa",
+          "precio": 8800.0,
+          "descripcion": "Tomáte, lechuga, paleta, queso, huevo y fritas.",
+          "ingredientes": [
+            {
+              "nombre": "Lechuga",
+              "cantidad_base": 1,
+              "precio_extra": 500.0,
+              "precio_resta": 500.0
+            },
+            {
+              "nombre": "Pepinillos",
+              "cantidad_base": 1,
+              "precio_extra": 500.0,
+              "precio_resta": 500.0
+            },
+            {
+              "nombre": "Medallon",
+              "cantidad_base": 1,
+              "precio_extra": 900.0,
+              "precio_resta": 900.0
+            },
+            {
+              "nombre": "Fritas",
+              "cantidad_base": 1
+            },
+            {
+              "nombre": "Paleta",
+              "cantidad_base": 1
+            }
+          ],
+          "imagen": "productos/producto_1.png"
+        },
+        {
+          "id": 3,
+          "nombre": "Hamburguesa Simple",
+          "precio": 80000.0,
+          "descripcion": "Tomáte, lechuga y fritas.xxx",
+          "ingredientes": [
+            {
+              "nombre": "Paleta",
+              "cantidad_base": 1
+            },
+            {
+              "nombre": "Lechuga",
+              "cantidad_base": 1
+            }
+          ],
+          "imagen": "productos/producto_3.png"
         }
       ]
     },

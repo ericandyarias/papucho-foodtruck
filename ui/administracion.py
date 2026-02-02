@@ -4,7 +4,7 @@ Permite Alta, Baja y Modificación de productos
 """
 import tkinter as tk
 from tkinter import ttk
-from tkinter import messagebox
+from tkinter import messagebox, filedialog
 import os
 import sys
 
@@ -24,6 +24,10 @@ from ui.administracion_ingredientes_producto import (
     cargar_ingredientes_por_categoria,
     agregar_ingrediente_a_producto_ui,
     eliminar_ingrediente_de_producto_ui
+)
+from utils.imagenes import (
+    guardar_imagen_producto, guardar_imagen_ingrediente,
+    cargar_imagen_tkinter, eliminar_imagen
 )
 
 
@@ -49,7 +53,7 @@ class VentanaAdministracion:
         """Crea y configura la ventana de administración"""
         self.ventana = tk.Toplevel(self.parent)
         self.ventana.title("Administración")
-        self.ventana.geometry("1400x700")
+        self.ventana.geometry("1500x750")
         self.ventana.resizable(True, True)
         
         # Centrar la ventana
@@ -91,8 +95,8 @@ class VentanaAdministracion:
     def crear_pestaña_productos(self, parent):
         """Crea la pestaña de productos"""
         # Configurar grid
-        parent.columnconfigure(0, weight=3)  # Lista más ancha
-        parent.columnconfigure(1, weight=2)  # Formulario más estrecho
+        parent.columnconfigure(0, weight=2)  # Lista
+        parent.columnconfigure(1, weight=3)  # Formulario más ancho
         parent.rowconfigure(0, weight=1)
         
         # Frame izquierdo: Lista de productos
@@ -178,13 +182,50 @@ class VentanaAdministracion:
         """Crea el frame con el formulario de producto"""
         frame_formulario = ttk.LabelFrame(parent, text="Datos del Producto", padding=10)
         frame_formulario.grid(row=0, column=1, sticky='nsew', padx=5, pady=5)
-        frame_formulario.columnconfigure(1, weight=1)
+        frame_formulario.columnconfigure(0, weight=1)
+        frame_formulario.rowconfigure(0, weight=1)
+        
+        # Canvas con scrollbar para el formulario
+        canvas_formulario = tk.Canvas(frame_formulario)
+        scrollbar_formulario = ttk.Scrollbar(frame_formulario, orient="vertical", command=canvas_formulario.yview)
+        frame_contenido = ttk.Frame(canvas_formulario)
+        
+        frame_contenido.bind(
+            "<Configure>",
+            lambda e: canvas_formulario.configure(scrollregion=canvas_formulario.bbox("all"))
+        )
+        
+        # Crear ventana del canvas
+        canvas_window = canvas_formulario.create_window((0, 0), window=frame_contenido, anchor="nw")
+        
+        # Función para ajustar el ancho del frame cuando el canvas cambie de tamaño
+        def ajustar_ancho_frame_form(event):
+            canvas_width = event.width
+            canvas_formulario.itemconfig(canvas_window, width=canvas_width)
+        
+        canvas_formulario.bind('<Configure>', ajustar_ancho_frame_form)
+        canvas_formulario.configure(yscrollcommand=scrollbar_formulario.set)
+        
+        # Configurar scroll con rueda del mouse
+        def on_mousewheel_form(event):
+            canvas_formulario.yview_scroll(int(-1 * (event.delta / 120)), "units")
+        
+        canvas_formulario.bind_all("<MouseWheel>", on_mousewheel_form)
+        
+        canvas_formulario.grid(row=0, column=0, sticky='nsew')
+        scrollbar_formulario.grid(row=0, column=1, sticky='ns')
+        
+        # Guardar referencia al canvas para acceso desde otros métodos
+        self.canvas_formulario = canvas_formulario
+        
+        # Ahora el contenido va en frame_contenido en lugar de frame_formulario
+        frame_contenido.columnconfigure(1, weight=1)
         
         # Categoría
-        ttk.Label(frame_formulario, text="Categoría:").grid(row=0, column=0, sticky='w', pady=5, padx=5)
+        ttk.Label(frame_contenido, text="Categoría:").grid(row=0, column=0, sticky='w', pady=5, padx=5)
         self.var_categoria = tk.StringVar()
         combo_categoria = ttk.Combobox(
-            frame_formulario,
+            frame_contenido,
             textvariable=self.var_categoria,
             values=CATEGORIAS_FIJAS,
             state='readonly',
@@ -193,23 +234,55 @@ class VentanaAdministracion:
         combo_categoria.grid(row=0, column=1, sticky='ew', pady=5, padx=5)
         
         # Nombre
-        ttk.Label(frame_formulario, text="Nombre:").grid(row=1, column=0, sticky='w', pady=5, padx=5)
-        self.entry_nombre = ttk.Entry(frame_formulario, width=30)
+        ttk.Label(frame_contenido, text="Nombre:").grid(row=1, column=0, sticky='w', pady=5, padx=5)
+        self.entry_nombre = ttk.Entry(frame_contenido, width=30)
         self.entry_nombre.grid(row=1, column=1, sticky='ew', pady=5, padx=5)
         
         # Precio
-        ttk.Label(frame_formulario, text="Precio:").grid(row=2, column=0, sticky='w', pady=5, padx=5)
-        self.entry_precio = ttk.Entry(frame_formulario, width=30)
+        ttk.Label(frame_contenido, text="Precio:").grid(row=2, column=0, sticky='w', pady=5, padx=5)
+        self.entry_precio = ttk.Entry(frame_contenido, width=30)
         self.entry_precio.grid(row=2, column=1, sticky='ew', pady=5, padx=5)
         
         # Descripción
-        ttk.Label(frame_formulario, text="Descripción:").grid(row=3, column=0, sticky='nw', pady=5, padx=5)
-        self.text_descripcion = tk.Text(frame_formulario, width=30, height=5, wrap='word')
+        ttk.Label(frame_contenido, text="Descripción:").grid(row=3, column=0, sticky='nw', pady=5, padx=5)
+        self.text_descripcion = tk.Text(frame_contenido, width=30, height=5, wrap='word')
         self.text_descripcion.grid(row=3, column=1, sticky='ew', pady=5, padx=5)
         
+        # Sección de Imagen
+        frame_imagen = ttk.LabelFrame(frame_contenido, text="Imagen del Producto", padding=10)
+        frame_imagen.grid(row=4, column=0, columnspan=2, sticky='ew', pady=10, padx=5)
+        frame_imagen.columnconfigure(0, weight=1)
+        
+        # Frame para preview y botón
+        frame_imagen_controles = ttk.Frame(frame_imagen)
+        frame_imagen_controles.grid(row=0, column=0, sticky='ew')
+        frame_imagen_controles.columnconfigure(0, weight=1)
+        
+        # Preview de imagen (pequeño, 100x100)
+        self.label_preview_imagen = ttk.Label(
+            frame_imagen_controles,
+            text="Sin imagen",
+            background='lightgray',
+            width=15
+        )
+        self.label_preview_imagen.grid(row=0, column=0, padx=5, pady=5)
+        self.imagen_preview_producto = None  # Mantener referencia para evitar garbage collection
+        
+        # Botón cargar imagen
+        btn_cargar_imagen = ttk.Button(
+            frame_imagen_controles,
+            text="📷 Cargar Imagen",
+            command=self.cargar_imagen_producto,
+            width=20
+        )
+        btn_cargar_imagen.grid(row=0, column=1, padx=5, pady=5)
+        
+        # Variable para ruta de imagen temporal
+        self.ruta_imagen_producto_temp = None
+        
         # Frame para botones
-        frame_botones = ttk.Frame(frame_formulario)
-        frame_botones.grid(row=4, column=0, columnspan=2, pady=20)
+        frame_botones = ttk.Frame(frame_contenido)
+        frame_botones.grid(row=5, column=0, columnspan=2, pady=20)
         
         # Botón Guardar
         self.btn_guardar = ttk.Button(
@@ -250,8 +323,8 @@ class VentanaAdministracion:
         btn_limpiar.pack(side='left', padx=5)
         
         # Sección de Ingredientes del Producto
-        frame_ingredientes_producto = ttk.LabelFrame(frame_formulario, text="Ingredientes del Producto", padding=10)
-        frame_ingredientes_producto.grid(row=5, column=0, columnspan=2, sticky='ew', pady=10, padx=5)
+        frame_ingredientes_producto = ttk.LabelFrame(frame_contenido, text="Ingredientes del Producto", padding=10)
+        frame_ingredientes_producto.grid(row=6, column=0, columnspan=2, sticky='ew', pady=10, padx=5)
         frame_ingredientes_producto.columnconfigure(0, weight=1)
         
         # Frame para agregar ingrediente
@@ -371,6 +444,10 @@ class VentanaAdministracion:
             self.text_descripcion.delete('1.0', 'end')
             self.text_descripcion.insert('1.0', self.producto_seleccionado.get('descripcion', ''))
             
+            # Cargar imagen del producto si existe
+            self.mostrar_imagen_producto(self.producto_seleccionado.get('imagen'))
+            self.ruta_imagen_producto_temp = None
+            
             # Habilitar botones de modificar y eliminar
             self.btn_modificar.config(state='normal')
             self.btn_eliminar.config(state='normal')
@@ -397,6 +474,9 @@ class VentanaAdministracion:
         self.text_descripcion.delete('1.0', 'end')
         self.producto_seleccionado = None
         self.tree.selection_remove(self.tree.selection())
+        # Limpiar imagen
+        self.mostrar_imagen_producto(None)
+        self.ruta_imagen_producto_temp = None
         # Limpiar el treeview de ingredientes del producto
         if hasattr(self, 'tree_ingredientes_producto'):
             for item in self.tree_ingredientes_producto.get_children():
@@ -434,7 +514,19 @@ class VentanaAdministracion:
         descripcion = self.text_descripcion.get('1.0', 'end').strip()
         
         try:
-            agregar_producto(categoria, nombre, precio, descripcion)
+            nuevo_producto = agregar_producto(categoria, nombre, precio, descripcion)
+            producto_id = nuevo_producto['id']
+            
+            # Guardar imagen si se cargó una
+            if self.ruta_imagen_producto_temp:
+                try:
+                    ruta_imagen = guardar_imagen_producto(self.ruta_imagen_producto_temp, producto_id)
+                    # Actualizar producto con imagen
+                    from utils.productos import modificar_producto
+                    modificar_producto(producto_id, categoria, nombre, precio, descripcion, ruta_imagen)
+                except Exception as e:
+                    messagebox.showwarning("Advertencia", f"Producto guardado pero error al guardar imagen: {str(e)}")
+            
             messagebox.showinfo("Éxito", "Producto agregado correctamente")
             self.cargar_lista_productos()
             self.limpiar_formulario()
@@ -460,8 +552,22 @@ class VentanaAdministracion:
         precio = float(self.entry_precio.get())
         descripcion = self.text_descripcion.get('1.0', 'end').strip()
         
+        # Obtener imagen actual o nueva
+        ruta_imagen = self.producto_seleccionado.get('imagen')
+        
+        # Si se cargó una nueva imagen, guardarla
+        if self.ruta_imagen_producto_temp:
+            try:
+                # Eliminar imagen anterior si existe
+                if ruta_imagen:
+                    eliminar_imagen(ruta_imagen)
+                # Guardar nueva imagen
+                ruta_imagen = guardar_imagen_producto(self.ruta_imagen_producto_temp, producto_id)
+            except Exception as e:
+                messagebox.showwarning("Advertencia", f"Error al guardar imagen: {str(e)}")
+        
         try:
-            if modificar_producto(producto_id, categoria, nombre, precio, descripcion):
+            if modificar_producto(producto_id, categoria, nombre, precio, descripcion, ruta_imagen):
                 messagebox.showinfo("Éxito", "Producto modificado correctamente")
                 self.cargar_lista_productos()
                 
@@ -569,16 +675,53 @@ class VentanaAdministracion:
         # Frame derecho: Formulario de ingrediente
         frame_formulario_ing = ttk.LabelFrame(parent, text="Datos del Ingrediente", padding=10)
         frame_formulario_ing.grid(row=0, column=1, sticky='nsew', padx=5, pady=5)
-        frame_formulario_ing.columnconfigure(1, weight=1)
+        frame_formulario_ing.columnconfigure(0, weight=1)
+        frame_formulario_ing.rowconfigure(0, weight=1)
+        
+        # Canvas con scrollbar para el formulario de ingredientes
+        canvas_formulario_ing = tk.Canvas(frame_formulario_ing)
+        scrollbar_formulario_ing = ttk.Scrollbar(frame_formulario_ing, orient="vertical", command=canvas_formulario_ing.yview)
+        frame_contenido_ing = ttk.Frame(canvas_formulario_ing)
+        
+        frame_contenido_ing.bind(
+            "<Configure>",
+            lambda e: canvas_formulario_ing.configure(scrollregion=canvas_formulario_ing.bbox("all"))
+        )
+        
+        # Crear ventana del canvas
+        canvas_window_ing = canvas_formulario_ing.create_window((0, 0), window=frame_contenido_ing, anchor="nw")
+        
+        # Función para ajustar el ancho del frame cuando el canvas cambie de tamaño
+        def ajustar_ancho_frame_form_ing(event):
+            canvas_width = event.width
+            canvas_formulario_ing.itemconfig(canvas_window_ing, width=canvas_width)
+        
+        canvas_formulario_ing.bind('<Configure>', ajustar_ancho_frame_form_ing)
+        canvas_formulario_ing.configure(yscrollcommand=scrollbar_formulario_ing.set)
+        
+        # Configurar scroll con rueda del mouse
+        def on_mousewheel_form_ing(event):
+            canvas_formulario_ing.yview_scroll(int(-1 * (event.delta / 120)), "units")
+        
+        canvas_formulario_ing.bind_all("<MouseWheel>", on_mousewheel_form_ing)
+        
+        canvas_formulario_ing.grid(row=0, column=0, sticky='nsew')
+        scrollbar_formulario_ing.grid(row=0, column=1, sticky='ns')
+        
+        # Guardar referencia al canvas para acceso desde otros métodos
+        self.canvas_formulario_ing = canvas_formulario_ing
+        
+        # Ahora el contenido va en frame_contenido_ing en lugar de frame_formulario_ing
+        frame_contenido_ing.columnconfigure(1, weight=1)
         
         # Nombre
-        ttk.Label(frame_formulario_ing, text="Nombre:").grid(row=0, column=0, sticky='w', pady=5, padx=5)
-        self.entry_nombre_ing = ttk.Entry(frame_formulario_ing, width=30)
+        ttk.Label(frame_contenido_ing, text="Nombre:").grid(row=0, column=0, sticky='w', pady=5, padx=5)
+        self.entry_nombre_ing = ttk.Entry(frame_contenido_ing, width=30)
         self.entry_nombre_ing.grid(row=0, column=1, sticky='ew', pady=5, padx=5)
         
         # Categorías (checkboxes)
-        ttk.Label(frame_formulario_ing, text="Categorías:").grid(row=1, column=0, sticky='nw', pady=5, padx=5)
-        frame_categorias_ing = ttk.Frame(frame_formulario_ing)
+        ttk.Label(frame_contenido_ing, text="Categorías:").grid(row=1, column=0, sticky='nw', pady=5, padx=5)
+        frame_categorias_ing = ttk.Frame(frame_contenido_ing)
         frame_categorias_ing.grid(row=1, column=1, sticky='ew', pady=5, padx=5)
         
         self.vars_categorias_ing = {}
@@ -593,18 +736,50 @@ class VentanaAdministracion:
             checkbox.grid(row=idx // 2, column=idx % 2, sticky='w', padx=5, pady=2)
         
         # Precio Extra
-        ttk.Label(frame_formulario_ing, text="Precio Extra:").grid(row=2, column=0, sticky='w', pady=5, padx=5)
-        self.entry_precio_extra = ttk.Entry(frame_formulario_ing, width=30)
+        ttk.Label(frame_contenido_ing, text="Precio Extra:").grid(row=2, column=0, sticky='w', pady=5, padx=5)
+        self.entry_precio_extra = ttk.Entry(frame_contenido_ing, width=30)
         self.entry_precio_extra.grid(row=2, column=1, sticky='ew', pady=5, padx=5)
         
         # Precio Resta
-        ttk.Label(frame_formulario_ing, text="Precio Resta:").grid(row=3, column=0, sticky='w', pady=5, padx=5)
-        self.entry_precio_resta = ttk.Entry(frame_formulario_ing, width=30)
+        ttk.Label(frame_contenido_ing, text="Precio Resta:").grid(row=3, column=0, sticky='w', pady=5, padx=5)
+        self.entry_precio_resta = ttk.Entry(frame_contenido_ing, width=30)
         self.entry_precio_resta.grid(row=3, column=1, sticky='ew', pady=5, padx=5)
         
+        # Sección de Imagen
+        frame_imagen_ing = ttk.LabelFrame(frame_contenido_ing, text="Imagen del Ingrediente", padding=10)
+        frame_imagen_ing.grid(row=4, column=0, columnspan=2, sticky='ew', pady=10, padx=5)
+        frame_imagen_ing.columnconfigure(0, weight=1)
+        
+        # Frame para preview y botón
+        frame_imagen_controles_ing = ttk.Frame(frame_imagen_ing)
+        frame_imagen_controles_ing.grid(row=0, column=0, sticky='ew')
+        frame_imagen_controles_ing.columnconfigure(0, weight=1)
+        
+        # Preview de imagen (pequeño, 100x100)
+        self.label_preview_imagen_ing = ttk.Label(
+            frame_imagen_controles_ing,
+            text="Sin imagen",
+            background='lightgray',
+            width=15
+        )
+        self.label_preview_imagen_ing.grid(row=0, column=0, padx=5, pady=5)
+        self.imagen_preview_ingrediente = None  # Mantener referencia para evitar garbage collection
+        
+        # Botón cargar imagen
+        btn_cargar_imagen_ing = ttk.Button(
+            frame_imagen_controles_ing,
+            text="📷 Cargar Imagen",
+            command=self.cargar_imagen_ingrediente,
+            width=20
+        )
+        btn_cargar_imagen_ing.grid(row=0, column=1, padx=5, pady=5)
+        
+        # Variable para ruta de imagen temporal
+        self.ruta_imagen_ingrediente_temp = None
+        
         # Frame para botones
-        frame_botones_ing = ttk.Frame(frame_formulario_ing)
-        frame_botones_ing.grid(row=4, column=0, columnspan=2, pady=20)
+        frame_botones_ing = ttk.Frame(frame_contenido_ing)
+        frame_botones_ing.grid(row=5, column=0, columnspan=2, pady=20)
         
         # Botón Guardar
         self.btn_guardar_ing = ttk.Button(
@@ -707,6 +882,10 @@ class VentanaAdministracion:
             self.entry_precio_resta.delete(0, 'end')
             self.entry_precio_resta.insert(0, str(ingrediente['precio_resta']))
             
+            # Cargar imagen del ingrediente si existe
+            self.mostrar_imagen_ingrediente(ingrediente.get('imagen'))
+            self.ruta_imagen_ingrediente_temp = None
+            
             # Habilitar botones de modificar y eliminar
             self.btn_modificar_ing.config(state='normal')
             self.btn_eliminar_ing.config(state='normal')
@@ -729,6 +908,9 @@ class VentanaAdministracion:
         self.entry_precio_resta.delete(0, 'end')
         self.ingrediente_seleccionado = None
         self.tree_ingredientes.selection_remove(self.tree_ingredientes.selection())
+        # Limpiar imagen
+        self.mostrar_imagen_ingrediente(None)
+        self.ruta_imagen_ingrediente_temp = None
     
     def validar_formulario_ingrediente(self):
         """Valida que el formulario de ingrediente esté completo"""
@@ -773,7 +955,19 @@ class VentanaAdministracion:
         precio_resta = float(self.entry_precio_resta.get())
         
         try:
-            agregar_ingrediente(nombre, categorias, precio_extra, precio_resta)
+            nuevo_ingrediente = agregar_ingrediente(nombre, categorias, precio_extra, precio_resta)
+            ingrediente_id = nuevo_ingrediente['id']
+            
+            # Guardar imagen si se cargó una
+            if self.ruta_imagen_ingrediente_temp:
+                try:
+                    ruta_imagen = guardar_imagen_ingrediente(self.ruta_imagen_ingrediente_temp, ingrediente_id)
+                    # Actualizar ingrediente con imagen
+                    from utils.ingredientes import modificar_ingrediente
+                    modificar_ingrediente(ingrediente_id, nombre, categorias, precio_extra, precio_resta, ruta_imagen)
+                except Exception as e:
+                    messagebox.showwarning("Advertencia", f"Ingrediente guardado pero error al guardar imagen: {str(e)}")
+            
             messagebox.showinfo("Éxito", "Ingrediente agregado correctamente")
             self.cargar_lista_ingredientes()
             self.limpiar_formulario_ingrediente()
@@ -795,8 +989,22 @@ class VentanaAdministracion:
         precio_extra = float(self.entry_precio_extra.get())
         precio_resta = float(self.entry_precio_resta.get())
         
+        # Obtener imagen actual o nueva
+        ruta_imagen = self.ingrediente_seleccionado.get('imagen')
+        
+        # Si se cargó una nueva imagen, guardarla
+        if self.ruta_imagen_ingrediente_temp:
+            try:
+                # Eliminar imagen anterior si existe
+                if ruta_imagen:
+                    eliminar_imagen(ruta_imagen)
+                # Guardar nueva imagen
+                ruta_imagen = guardar_imagen_ingrediente(self.ruta_imagen_ingrediente_temp, ingrediente_id)
+            except Exception as e:
+                messagebox.showwarning("Advertencia", f"Error al guardar imagen: {str(e)}")
+        
         try:
-            if modificar_ingrediente(ingrediente_id, nombre, categorias, precio_extra, precio_resta):
+            if modificar_ingrediente(ingrediente_id, nombre, categorias, precio_extra, precio_resta, ruta_imagen):
                 messagebox.showinfo("Éxito", "Ingrediente modificado correctamente")
                 self.cargar_lista_ingredientes()
                 self.nuevo_ingrediente()
@@ -925,3 +1133,113 @@ class VentanaAdministracion:
         if resultado:
             self.producto_seleccionado = resultado['producto']
             self.cargar_ingredientes_producto()
+    
+    def cargar_imagen_producto(self):
+        """Abre diálogo para cargar imagen de producto"""
+        ruta = filedialog.askopenfilename(
+            title="Seleccionar imagen del producto",
+            filetypes=[
+                ("Imágenes", "*.jpg *.jpeg *.png *.gif *.bmp *.webp"),
+                ("Todos los archivos", "*.*")
+            ]
+        )
+        
+        if ruta:
+            try:
+                # Validar formato
+                from utils.imagenes import validar_formato_imagen
+                if not validar_formato_imagen(ruta):
+                    messagebox.showerror("Error", "Formato de imagen no permitido")
+                    return
+                
+                # Guardar ruta temporal
+                self.ruta_imagen_producto_temp = ruta
+                
+                # Mostrar preview
+                self.mostrar_imagen_producto(ruta, es_ruta_completa=True)
+                
+            except Exception as e:
+                messagebox.showerror("Error", f"Error al cargar imagen: {str(e)}")
+    
+    def mostrar_imagen_producto(self, ruta_imagen, es_ruta_completa=False):
+        """Muestra preview de imagen del producto"""
+        if not ruta_imagen:
+            self.label_preview_imagen.config(image='', text="Sin imagen")
+            self.imagen_preview_producto = None
+            return
+        
+        try:
+            # Cargar imagen redimensionada (100x100 para preview)
+            if es_ruta_completa:
+                imagen_tk = cargar_imagen_tkinter(ruta_imagen, 100, 100)
+            else:
+                imagen_tk = cargar_imagen_tkinter(ruta_imagen, 100, 100)
+            
+            if imagen_tk:
+                self.label_preview_imagen.config(image=imagen_tk, text='')
+                self.imagen_preview_producto = imagen_tk  # Mantener referencia
+                # Actualizar scrollregion después de cargar imagen
+                if hasattr(self, 'canvas_formulario'):
+                    self.canvas_formulario.update_idletasks()
+                    self.canvas_formulario.configure(scrollregion=self.canvas_formulario.bbox("all"))
+            else:
+                self.label_preview_imagen.config(image='', text="Error al cargar")
+                self.imagen_preview_producto = None
+        except Exception:
+            self.label_preview_imagen.config(image='', text="Error al cargar")
+            self.imagen_preview_producto = None
+    
+    def cargar_imagen_ingrediente(self):
+        """Abre diálogo para cargar imagen de ingrediente"""
+        ruta = filedialog.askopenfilename(
+            title="Seleccionar imagen del ingrediente",
+            filetypes=[
+                ("Imágenes", "*.jpg *.jpeg *.png *.gif *.bmp *.webp"),
+                ("Todos los archivos", "*.*")
+            ]
+        )
+        
+        if ruta:
+            try:
+                # Validar formato
+                from utils.imagenes import validar_formato_imagen
+                if not validar_formato_imagen(ruta):
+                    messagebox.showerror("Error", "Formato de imagen no permitido")
+                    return
+                
+                # Guardar ruta temporal
+                self.ruta_imagen_ingrediente_temp = ruta
+                
+                # Mostrar preview
+                self.mostrar_imagen_ingrediente(ruta, es_ruta_completa=True)
+                
+            except Exception as e:
+                messagebox.showerror("Error", f"Error al cargar imagen: {str(e)}")
+    
+    def mostrar_imagen_ingrediente(self, ruta_imagen, es_ruta_completa=False):
+        """Muestra preview de imagen del ingrediente"""
+        if not ruta_imagen:
+            self.label_preview_imagen_ing.config(image='', text="Sin imagen")
+            self.imagen_preview_ingrediente = None
+            return
+        
+        try:
+            # Cargar imagen redimensionada (100x100 para preview)
+            if es_ruta_completa:
+                imagen_tk = cargar_imagen_tkinter(ruta_imagen, 100, 100)
+            else:
+                imagen_tk = cargar_imagen_tkinter(ruta_imagen, 100, 100)
+            
+            if imagen_tk:
+                self.label_preview_imagen_ing.config(image=imagen_tk, text='')
+                self.imagen_preview_ingrediente = imagen_tk  # Mantener referencia
+                # Actualizar scrollregion después de cargar imagen
+                if hasattr(self, 'canvas_formulario_ing'):
+                    self.canvas_formulario_ing.update_idletasks()
+                    self.canvas_formulario_ing.configure(scrollregion=self.canvas_formulario_ing.bbox("all"))
+            else:
+                self.label_preview_imagen_ing.config(image='', text="Error al cargar")
+                self.imagen_preview_ingrediente = None
+        except Exception:
+            self.label_preview_imagen_ing.config(image='', text="Error al cargar")
+            self.imagen_preview_ingrediente = None

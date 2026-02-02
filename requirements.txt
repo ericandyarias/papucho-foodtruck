@@ -1,5 +1,6 @@
 # Dependencias del proyecto
 python-escpos>=3.1
+Pillow>=10.0.0
 
 # Nota: python-escpos requiere:
 # - Pillow (instalado automáticamente)

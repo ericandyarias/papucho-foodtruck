@@ -114,7 +114,7 @@ def buscar_producto_por_id(producto_id):
     return None
 
 
-def agregar_producto(categoria_nombre, nombre, precio, descripcion):
+def agregar_producto(categoria_nombre, nombre, precio, descripcion, imagen=None):
     """Agrega un nuevo producto a una categoría"""
     data = cargar_productos()
     
@@ -138,12 +138,16 @@ def agregar_producto(categoria_nombre, nombre, precio, descripcion):
         "descripcion": descripcion
     }
     
+    # Agregar imagen si se proporciona
+    if imagen:
+        nuevo_producto["imagen"] = imagen
+    
     categoria.setdefault("productos", []).append(nuevo_producto)
     guardar_productos(data)
     return nuevo_producto
 
 
-def modificar_producto(producto_id, categoria_nombre, nombre, precio, descripcion):
+def modificar_producto(producto_id, categoria_nombre, nombre, precio, descripcion, imagen=None):
     """Modifica un producto existente"""
     data = cargar_productos()
     
@@ -167,6 +171,13 @@ def modificar_producto(producto_id, categoria_nombre, nombre, precio, descripcio
     producto_encontrado["nombre"] = nombre
     producto_encontrado["precio"] = float(precio)
     producto_encontrado["descripcion"] = descripcion
+    
+    # Actualizar imagen si se proporciona (None significa no cambiar, "" significa eliminar)
+    if imagen is not None:
+        if imagen:
+            producto_encontrado["imagen"] = imagen
+        else:
+            producto_encontrado.pop("imagen", None)
     
     # Si cambió de categoría, agregarlo a la nueva
     if categoria_original != categoria_nombre:
