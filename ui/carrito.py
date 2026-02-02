@@ -7,6 +7,7 @@ from tkinter import ttk
 from tkinter import messagebox
 import os
 import sys
+from PIL import Image, ImageTk
 
 # Agregar el directorio raíz al path para importar módulos
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
@@ -728,18 +729,23 @@ class Carrito(ttk.Frame):
                     if ruta_imagen_completa:
                         imagen_ingrediente = cargar_imagen_tkinter(ruta_imagen_completa, 70, 70)
             
-            # Label para mostrar la imagen (o placeholder si no hay imagen)
+            # Si no hay imagen, crear una imagen transparente como placeholder
+            if not imagen_ingrediente:
+                # Crear imagen transparente de 70x70 píxeles
+                imagen_transparente = Image.new('RGBA', (70, 70), (255, 255, 255, 0))
+                imagen_ingrediente = ImageTk.PhotoImage(imagen_transparente)
+            
+            # Label para mostrar la imagen (siempre con imagen, incluso si es transparente)
             label_imagen = ttk.Label(
                 frame_imagen,
                 image=imagen_ingrediente,
-                text="📷" if not imagen_ingrediente else "",
+                text="",
                 compound='center',
                 anchor='center'
             )
             label_imagen.pack(expand=True)
             # Mantener referencia a la imagen para evitar que se elimine por el garbage collector
-            if imagen_ingrediente:
-                label_imagen.image = imagen_ingrediente
+            label_imagen.image = imagen_ingrediente
 
             # Label cantidad
             ttk.Label(frame_ing, text="Cantidad:").grid(row=0, column=1, padx=5, sticky='w')

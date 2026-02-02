@@ -116,6 +116,7 @@ class VentanaAdministracion:
         frame_filtros = ttk.Frame(frame_lista)
         frame_filtros.grid(row=0, column=0, sticky='ew', pady=5)
         frame_filtros.columnconfigure(1, weight=1)
+        frame_filtros.columnconfigure(3, weight=1)
         
         ttk.Label(frame_filtros, text="Categoría:").grid(row=0, column=0, padx=5)
         
@@ -129,6 +130,18 @@ class VentanaAdministracion:
         )
         combo_filtro.grid(row=0, column=1, padx=5, sticky='w')
         combo_filtro.bind('<<ComboboxSelected>>', lambda e: self.cargar_lista_productos())
+        
+        # Buscador
+        ttk.Label(frame_filtros, text="🔍 Buscar:").grid(row=0, column=2, padx=(10, 5))
+        self.var_buscador = tk.StringVar()
+        entry_buscador = ttk.Entry(
+            frame_filtros,
+            textvariable=self.var_buscador,
+            width=20
+        )
+        entry_buscador.grid(row=0, column=3, padx=5, sticky='ew')
+        # Filtrar mientras se escribe
+        self.var_buscador.trace_add('write', lambda *args: self.cargar_lista_productos())
         
         # Treeview para lista de productos
         frame_tree = ttk.Frame(frame_lista)
@@ -245,7 +258,7 @@ class VentanaAdministracion:
         
         # Descripción
         ttk.Label(frame_contenido, text="Descripción:").grid(row=3, column=0, sticky='nw', pady=5, padx=5)
-        self.text_descripcion = tk.Text(frame_contenido, width=30, height=5, wrap='word')
+        self.text_descripcion = tk.Text(frame_contenido, width=30, height=2, wrap='word')
         self.text_descripcion.grid(row=3, column=1, sticky='ew', pady=5, padx=5)
         
         # Sección de Imagen
@@ -404,6 +417,15 @@ class VentanaAdministracion:
         filtro_categoria = self.var_filtro_categoria.get()
         if filtro_categoria != "Todas":
             productos = [p for p in productos if p["categoria"] == filtro_categoria]
+        
+        # Filtrar por texto de búsqueda si existe
+        texto_busqueda = self.var_buscador.get().strip().lower()
+        if texto_busqueda:
+            productos = [
+                p for p in productos
+                if texto_busqueda in p['nombre'].lower()
+                or texto_busqueda in p.get('descripcion', '').lower()
+            ]
         
         # Agregar productos al treeview
         for producto in productos:
