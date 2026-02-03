@@ -397,7 +397,7 @@ class VentanaAdministracion:
             frame_ingredientes_producto,
             text="❌ Eliminar Ingrediente",
             command=self.eliminar_ingrediente_producto,
-            width=20
+            width=30
         )
         btn_eliminar_ing.grid(row=2, column=0, pady=5)
         

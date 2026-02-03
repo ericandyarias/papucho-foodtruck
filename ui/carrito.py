@@ -457,12 +457,12 @@ class Carrito(ttk.Frame):
                 btn_editar.grid(row=0, column=columna_actual, padx=2)
                 columna_actual += 1
             
-            # Botón menos
+            # Botón menos - leer cantidad actual desde self.items al ejecutar
             btn_menos = ttk.Button(
                 controles_frame,
                 text="-",
                 width=3,
-                command=lambda idx=item_index: self.actualizar_cantidad(idx, item['cantidad'] - 1)
+                command=lambda idx=item_index: self.actualizar_cantidad(idx, self.items[idx]['cantidad'] - 1)
             )
             btn_menos.grid(row=0, column=columna_actual, padx=2)
             columna_actual += 1
@@ -474,12 +474,12 @@ class Carrito(ttk.Frame):
             ).grid(row=0, column=columna_actual, padx=2)
             columna_actual += 1
             
-            # Botón más
+            # Botón más - leer cantidad actual desde self.items al ejecutar
             btn_mas = ttk.Button(
                 controles_frame,
                 text="+",
                 width=3,
-                command=lambda idx=item_index: self.actualizar_cantidad(idx, item['cantidad'] + 1)
+                command=lambda idx=item_index: self.actualizar_cantidad(idx, self.items[idx]['cantidad'] + 1)
             )
             btn_mas.grid(row=0, column=columna_actual, padx=2)
             columna_actual += 1
@@ -546,7 +546,7 @@ class Carrito(ttk.Frame):
         # Crear ventana modal (diseño más simple)
         ventana = tk.Toplevel(self)
         ventana.title(f"Editar Ingredientes - {producto['nombre']}")
-        ventana.geometry("700x650")
+        ventana.geometry("900x650")
         ventana.resizable(True, True)
         ventana.transient(self.winfo_toplevel())
         ventana.grab_set()
@@ -828,16 +828,15 @@ class Carrito(ttk.Frame):
 
         # Frame para botones (simple)
         frame_botones = ttk.Frame(frame_principal)
-        frame_botones.grid(row=4, column=0, pady=15, sticky='ew')
-        frame_botones.columnconfigure(0, weight=1)
-        frame_botones.columnconfigure(1, weight=1)
+        frame_botones.grid(row=4, column=0, pady=15)
+        # No usar weight para que los botones no se expandan
 
         # Botón Cancelar
         btn_cancelar = tk.Button(
             frame_botones,
             text="❌ Cancelar",
             command=ventana.destroy,
-            width=18,
+            width=15,
             bg='#95a5a6',
             fg='white',
             font=('Arial', 10, 'bold'),
@@ -846,7 +845,7 @@ class Carrito(ttk.Frame):
             activebackground='#7f8c8d',
             activeforeground='white'
         )
-        btn_cancelar.grid(row=0, column=0, padx=5, sticky='ew')
+        btn_cancelar.pack(side='left', padx=5)
         
         # Botón Guardar/Aceptar
         def guardar_modificaciones():
@@ -881,7 +880,7 @@ class Carrito(ttk.Frame):
             frame_botones,
             text="✅ Aceptar",
             command=guardar_modificaciones,
-            width=18,
+            width=15,
             bg='#27ae60',
             fg='white',
             font=('Arial', 10, 'bold'),
@@ -890,7 +889,7 @@ class Carrito(ttk.Frame):
             activebackground='#2ecc71',
             activeforeground='white'
         )
-        btn_guardar.grid(row=0, column=1, padx=5, sticky='ew')
+        btn_guardar.pack(side='left', padx=5)
         
         # Centrar ventana un poco más a la izquierda
         ventana.update_idletasks()

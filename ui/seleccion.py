@@ -44,21 +44,19 @@ class Seleccion(ttk.Frame):
         self.rowconfigure(2, weight=1)
 
         # Frame para el buscador
-        """
         frame_buscador = ttk.Frame(self)
         frame_buscador.grid(row=0, column=0, sticky='ew', padx=10, pady=10)
         frame_buscador.columnconfigure(1, weight=1)
         
         ttk.Label(
             frame_buscador,
-            text="Buscar:",
+            text="🔍 Buscar:",
             font=('Arial', 10)
         ).grid(row=0, column=0, padx=5)
         
         self.entry_buscador = ttk.Entry(frame_buscador, width=30)
         self.entry_buscador.grid(row=0, column=1, sticky='ew', padx=5)
         self.entry_buscador.bind('<KeyRelease>', self.on_buscar)
-        """
         # Frame para categorías
         frame_categorias = ttk.LabelFrame(self, text="Categorías", padding=10)
         frame_categorias.grid(row=1, column=0, sticky='ew', padx=10, pady=5)
@@ -177,6 +175,22 @@ class Seleccion(ttk.Frame):
         if not categoria:
             return
         
+        # Mostrar productos de la categoría
+        self.mostrar_lista_productos(categoria.get("productos", []))
+    
+    def mostrar_lista_productos(self, productos):
+        """Muestra una lista de productos (usado tanto para categorías como para búsqueda)"""
+        # Limpiar productos actuales
+        for widget in self.frame_productos.winfo_children():
+            widget.destroy()
+        
+        # Limpiar referencias de imágenes anteriores
+        self._imagenes_productos.clear()
+        
+        # Actualizar el scrollregion del canvas
+        self.canvas_productos.update_idletasks()
+        self.canvas_productos.configure(scrollregion=self.canvas_productos.bbox("all"))
+        
         # Configurar grid del frame de productos para que ocupen todo el ancho
         self.frame_productos.columnconfigure(0, weight=1)
         
@@ -184,7 +198,7 @@ class Seleccion(ttk.Frame):
         TAMANO_IMAGEN = 80
         
         # Mostrar productos
-        for idx, producto in enumerate(categoria.get("productos", [])):
+        for idx, producto in enumerate(productos):
             frame_producto = ttk.Frame(self.frame_productos, relief='raised', borderwidth=1)
             frame_producto.grid(row=idx, column=0, sticky='ew', padx=5, pady=5)
             frame_producto.columnconfigure(1, weight=1)  # Columna de información con peso
@@ -260,9 +274,29 @@ class Seleccion(ttk.Frame):
     
     def on_buscar(self, event=None):
         """Callback cuando se escribe en el buscador"""
-        busqueda = self.entry_buscador.get().lower()
-        print(f"Buscando: {busqueda}")
-        # TODO: Implementar lógica de búsqueda
+        busqueda = self.entry_buscador.get().strip().lower()
+        
+        # Si no hay búsqueda, mostrar la categoría actual
+        if not busqueda:
+            if self.categoria_actual:
+                self.mostrar_productos(self.categoria_actual)
+            elif self.productos_data.get("categorias"):
+                self.mostrar_productos(self.productos_data["categorias"][0]["nombre"])
+            return
+        
+        # Buscar en todos los productos de todas las categorías
+        productos_encontrados = []
+        for categoria in self.productos_data.get("categorias", []):
+            for producto in categoria.get("productos", []):
+                nombre = producto.get("nombre", "").lower()
+                descripcion = producto.get("descripcion", "").lower()
+                
+                # Buscar en nombre o descripción
+                if busqueda in nombre or busqueda in descripcion:
+                    productos_encontrados.append(producto)
+        
+        # Mostrar productos encontrados
+        self.mostrar_lista_productos(productos_encontrados)
     
     def mostrar_ventana_producto_personalizado(self):
         """Muestra una ventana para crear un producto personalizado"""

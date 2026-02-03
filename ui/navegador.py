@@ -47,6 +47,32 @@ class Navegador(ttk.Frame):
         
         # Espaciador
         ttk.Label(self, text="").pack(expand=True)
+        
+        # Información del desarrollador
+        frame_desarrollador = ttk.Frame(self)
+        frame_desarrollador.pack(side='bottom', fill='x', pady=10, padx=5)
+        
+        ttk.Label(
+            frame_desarrollador,
+            text="Desarrollador:",
+            font=('Arial', 8),
+            foreground='gray'
+        ).pack()
+        
+        ttk.Label(
+            frame_desarrollador,
+            text="Eric Andy Arias Rojas",
+            font=('Arial', 8, 'bold'),
+            foreground='#2c3e50'
+        ).pack()
+        
+        ttk.Label(
+            frame_desarrollador,
+            text="02478-601418",
+            font=('Arial', 8),
+            foreground='#2c3e50'
+        ).pack(pady=(2, 0))
+        
     
     def on_pedidos_click(self):
         """

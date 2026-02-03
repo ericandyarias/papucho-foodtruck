@@ -1,8 +1,20 @@
 {
   "ingredientes": [
     {
+      "id": 1,
+      "nombre": "Paleta",
+      "categorias": [
+        "Hamburguesas",
+        "Lomitos",
+        "Milanesas"
+      ],
+      "precio_extra": 300.0,
+      "precio_resta": 300.0,
+      "imagen": "ingredientes/ingrediente_1.jpg"
+    },
+    {
       "id": 2,
-      "nombre": "Lechuga",
+      "nombre": "Queso",
       "categorias": [
         "Hamburguesas",
         "Lomitos",
@@ -14,44 +26,59 @@
     },
     {
       "id": 3,
-      "nombre": "Medallon",
+      "nombre": "Cheddar Hamb.",
       "categorias": [
         "Hamburguesas"
       ],
-      "precio_extra": 900.0,
-      "precio_resta": 900.0
+      "precio_extra": 300.0,
+      "precio_resta": 300.0,
+      "imagen": "ingredientes/ingrediente_3.png"
     },
     {
       "id": 4,
-      "nombre": "Pepinillos",
+      "nombre": "Cheddar Salsa",
       "categorias": [
-        "Hamburguesas"
+        "Fritas"
       ],
-      "precio_extra": 500.0,
-      "precio_resta": 500.0
+      "precio_extra": 300.0,
+      "precio_resta": 300.0,
+      "imagen": "ingredientes/ingrediente_4.webp"
     },
     {
       "id": 5,
-      "nombre": "Fritas",
-      "categorias": [
-        "Hamburguesas",
-        "Lomitos",
-        "Milanesas"
-      ],
-      "precio_extra": 1000.0,
-      "precio_resta": 800.0,
-      "imagen": "ingredientes/ingrediente_5.png"
-    },
-    {
-      "id": 6,
-      "nombre": "Paleta",
+      "nombre": "Huevo",
       "categorias": [
         "Hamburguesas",
         "Lomitos",
         "Milanesas"
       ],
       "precio_extra": 300.0,
-      "precio_resta": 300.0
+      "precio_resta": 300.0,
+      "imagen": "ingredientes/ingrediente_5.jpg"
+    },
+    {
+      "id": 6,
+      "nombre": "Tomate",
+      "categorias": [
+        "Hamburguesas",
+        "Lomitos",
+        "Milanesas"
+      ],
+      "precio_extra": 300.0,
+      "precio_resta": 300.0,
+      "imagen": "ingredientes/ingrediente_6.png"
+    },
+    {
+      "id": 7,
+      "nombre": "Lechuga",
+      "categorias": [
+        "Hamburguesas",
+        "Lomitos",
+        "Milanesas"
+      ],
+      "precio_extra": 300.0,
+      "precio_resta": 300.0,
+      "imagen": "ingredientes/ingrediente_7.png"
     }
   ]
 }

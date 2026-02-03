@@ -54,29 +54,23 @@
           "descripcion": "Tomáte, lechuga, paleta, queso, huevo y fritas.",
           "ingredientes": [
             {
-              "nombre": "Lechuga",
-              "cantidad_base": 1,
-              "precio_extra": 500.0,
-              "precio_resta": 500.0
-            },
-            {
-              "nombre": "Pepinillos",
-              "cantidad_base": 1,
-              "precio_extra": 500.0,
-              "precio_resta": 500.0
-            },
-            {
-              "nombre": "Medallon",
-              "cantidad_base": 1,
-              "precio_extra": 900.0,
-              "precio_resta": 900.0
-            },
-            {
-              "nombre": "Fritas",
+              "nombre": "Paleta",
               "cantidad_base": 1
             },
             {
-              "nombre": "Paleta",
+              "nombre": "Queso",
+              "cantidad_base": 1
+            },
+            {
+              "nombre": "Huevo",
+              "cantidad_base": 1
+            },
+            {
+              "nombre": "Tomate",
+              "cantidad_base": 1
+            },
+            {
+              "nombre": "Lechuga",
               "cantidad_base": 1
             }
           ],
@@ -87,16 +81,7 @@
           "nombre": "Hamburguesa Simple",
           "precio": 80000.0,
           "descripcion": "Tomáte, lechuga y fritas.xxx",
-          "ingredientes": [
-            {
-              "nombre": "Paleta",
-              "cantidad_base": 1
-            },
-            {
-              "nombre": "Lechuga",
-              "cantidad_base": 1
-            }
-          ],
+          "ingredientes": [],
           "imagen": "productos/producto_3.png"
         }
       ]

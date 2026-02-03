@@ -22,11 +22,11 @@ class Encabezado(ttk.Frame):
         titulo = ttk.Label(
             self,
             text="PAPUCHO FOODTRUCK",
-            font=('Arial', 24, 'bold'),
+            font=('Arial', 20, 'bold'),
             foreground='#2c3e50'
         )
-        titulo.pack(pady=20)
+        titulo.pack(pady=10)
         
         # Línea separadora
         separador = ttk.Separator(self, orient='horizontal')
-        separador.pack(fill='x', padx=10, pady=5)
+        separador.pack(fill='x', padx=10, pady=3)
