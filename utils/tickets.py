@@ -361,41 +361,42 @@ def imprimir_ticket_escpos(pedido_info, tipo_ticket):
         
         # Tipo de pedido y información adicional
         tipo_pedido = pedido_info.get('tipo', 'Servicio en mesa')
-        printer.text(f"{tipo_pedido}\n")
         
         # Domicilio si es pedido a domicilio
-        if tipo_pedido == "Domicilio" and pedido_info.get('domicilio'):
-            domicilio = pedido_info['domicilio']
-            # Si el domicilio es muy largo, dividirlo en líneas
-            if len(domicilio) > ancho_caracteres - 12:
-                palabras = domicilio.split()
-                linea = "Domicilio: "
-                for palabra in palabras:
-                    if len(linea) + len(palabra) + 1 > ancho_caracteres:
-                        printer.text(linea + "\n")
-                        linea = "  " + palabra
-                    else:
-                        linea += " " + palabra if linea != "Domicilio: " else palabra
-                printer.text(linea + "\n")
-            else:
-                printer.text(f"Domicilio: {domicilio}\n")
+        if tipo_pedido == "Domicilio":
+            if pedido_info.get('domicilio'):
+                domicilio = pedido_info['domicilio']
+                # Si el domicilio es muy largo, dividirlo en líneas
+                if len(domicilio) > ancho_caracteres - 12:
+                    palabras = domicilio.split()
+                    linea = "Domicilio: "
+                    for palabra in palabras:
+                        if len(linea) + len(palabra) + 1 > ancho_caracteres:
+                            printer.text(linea + "\n")
+                            linea = "  " + palabra
+                        else:
+                            linea += " " + palabra if linea != "Domicilio: " else palabra
+                    printer.text(linea + "\n")
+                else:
+                    printer.text(f"Domicilio: {domicilio}\n")
             
             # Hora estimada si existe
             if pedido_info.get('hora_estimada'):
                 printer.text(f"Hora estimada: {pedido_info['hora_estimada']}\n")
-        
-        # Hora de retiro si es "Retira en puesto"
-        if tipo_pedido == "Retira en puesto" and pedido_info.get('hora_retiro'):
-            printer.text(f"Hora de retiro: {pedido_info['hora_retiro']}\n")
-        
-        # Separador
-        printer.text("-" * ancho_caracteres + "\n")
+        elif tipo_pedido == "Retira en puesto":
+            # Mostrar tipo de pedido
+            printer.text(f"{tipo_pedido}\n")
+            # Hora estimada si existe
+            if pedido_info.get('hora_retiro'):
+                printer.text(f"Hora estimada: {pedido_info['hora_retiro']}\n")
+        else:
+            # Servicio en mesa u otros tipos
+            printer.text(f"{tipo_pedido}\n")
         
         # PEDIDO
         printer.set(align='left', bold=True)
         printer.text("PEDIDO:\n")
         printer.set(bold=False)
-        printer.text("-" * ancho_caracteres + "\n")
         
         # Items del pedido
         for item in pedido_info['items']:
@@ -424,10 +425,10 @@ def imprimir_ticket_escpos(pedido_info, tipo_ticket):
                 
                 # Mostrar modificaciones de ingredientes
                 ingredientes = producto.get('ingredientes', [])
+                # Importar función para buscar ingrediente por nombre
+                from utils.ingredientes import buscar_ingrediente_por_nombre
+                
                 if ingredientes and modificaciones:
-                    # Importar función para buscar ingrediente por nombre
-                    from utils.ingredientes import buscar_ingrediente_por_nombre
-                    
                     for ingrediente in ingredientes:
                         nombre_ing = ingrediente.get('nombre', '')
                         cantidad_base = ingrediente.get('cantidad_base', 1)
@@ -457,6 +458,22 @@ def imprimir_ticket_escpos(pedido_info, tipo_ticket):
                                 nombre_ing, quitados, False, precio_resta, cantidad, ancho_caracteres
                             )
                             printer.text(texto_ing + "\n")
+                
+                # Procesar ingredientes adicionales que no están en el producto (siempre, incluso si no hay ingredientes principales)
+                if modificaciones:
+                    ingredientes_producto_dict = {ing.get('nombre', '') for ing in ingredientes}
+                    for nombre_ing, cantidad_actual in modificaciones.items():
+                        if nombre_ing not in ingredientes_producto_dict and cantidad_actual > 0:
+                            # Este es un ingrediente adicional que no está en el producto
+                            ingrediente_actualizado = buscar_ingrediente_por_nombre(nombre_ing)
+                            if ingrediente_actualizado:
+                                precio_extra = ingrediente_actualizado.get('precio_extra', 0.0)
+                                if precio_extra > 0:
+                                    # Los ingredientes adicionales se muestran como extras
+                                    texto_ing = formatear_linea_ingrediente(
+                                        nombre_ing, cantidad_actual, True, precio_extra, cantidad, ancho_caracteres
+                                    )
+                                    printer.text(texto_ing + "\n")
             else:
                 # Formato normal para productos sin editar: cantidad + nombre + precio total (precio_base * cantidad)
                 precio_total = precio_base * cantidad
@@ -480,6 +497,17 @@ def imprimir_ticket_escpos(pedido_info, tipo_ticket):
         # Forma de pago
         printer.set(align='left', bold=False)
         printer.text(f"Forma de Pago: {pedido_info['forma_pago']}\n")
+        printer.text("\n")
+        printer.text("\n")
+        
+        # Estado de pago (solo en ticket de cocina)
+        if tipo_ticket == 'COCINA' and pedido_info.get('estado_pago'):
+            estado_pago = pedido_info['estado_pago']
+            # Alinear a la derecha con espacio entre las opciones
+            texto_estado = "Pagado                      Pendiente de pago"
+            espacios = " " * (ancho_caracteres - len(texto_estado))
+            printer.set(align='left', bold=False)
+            printer.text(f"{espacios}{texto_estado}\n")
         
         # Separador grueso
         printer.set(align='center')
@@ -564,22 +592,25 @@ def guardar_ticket_texto(pedido_info, tipo_ticket):
     
     # Tipo de pedido
     tipo_pedido = pedido_info.get('tipo', 'Servicio en mesa')
-    contenido.append(f"{tipo_pedido}")
     
     # Domicilio si es pedido a domicilio
-    if tipo_pedido == "Domicilio" and pedido_info.get('domicilio'):
-        contenido.append(f"Domicilio: {pedido_info['domicilio']}")
+    if tipo_pedido == "Domicilio":
+        if pedido_info.get('domicilio'):
+            contenido.append(f"Domicilio: {pedido_info['domicilio']}")
         # Hora estimada si existe
         if pedido_info.get('hora_estimada'):
             contenido.append(f"Hora estimada: {pedido_info['hora_estimada']}")
+    elif tipo_pedido == "Retira en puesto":
+        # Mostrar tipo de pedido
+        contenido.append(f"{tipo_pedido}")
+        # Hora estimada si existe
+        if pedido_info.get('hora_retiro'):
+            contenido.append(f"Hora estimada: {pedido_info['hora_retiro']}")
+    else:
+        # Servicio en mesa u otros tipos
+        contenido.append(f"{tipo_pedido}")
     
-    # Hora de retiro si es "Retira en puesto"
-    if tipo_pedido == "Retira en puesto" and pedido_info.get('hora_retiro'):
-        contenido.append(f"Hora de retiro: {pedido_info['hora_retiro']}")
-    
-    contenido.append("-" * ancho_caracteres)
     contenido.append("PEDIDO:")
-    contenido.append("-" * ancho_caracteres)
     
     for item in pedido_info['items']:
         producto = item['producto']
@@ -607,10 +638,10 @@ def guardar_ticket_texto(pedido_info, tipo_ticket):
             
             # Mostrar modificaciones de ingredientes
             ingredientes = producto.get('ingredientes', [])
+            # Importar función para buscar ingrediente por nombre
+            from utils.ingredientes import buscar_ingrediente_por_nombre
+            
             if ingredientes and modificaciones:
-                # Importar función para buscar ingrediente por nombre
-                from utils.ingredientes import buscar_ingrediente_por_nombre
-                
                 for ingrediente in ingredientes:
                     nombre_ing = ingrediente.get('nombre', '')
                     cantidad_base = ingrediente.get('cantidad_base', 1)
@@ -640,6 +671,22 @@ def guardar_ticket_texto(pedido_info, tipo_ticket):
                             nombre_ing, quitados, False, precio_resta, cantidad, ancho_caracteres
                         )
                         contenido.append(texto_ing)
+            
+            # Procesar ingredientes adicionales que no están en el producto (siempre, incluso si no hay ingredientes principales)
+            if modificaciones:
+                ingredientes_producto_dict = {ing.get('nombre', '') for ing in ingredientes}
+                for nombre_ing, cantidad_actual in modificaciones.items():
+                    if nombre_ing not in ingredientes_producto_dict and cantidad_actual > 0:
+                        # Este es un ingrediente adicional que no está en el producto
+                        ingrediente_actualizado = buscar_ingrediente_por_nombre(nombre_ing)
+                        if ingrediente_actualizado:
+                            precio_extra = ingrediente_actualizado.get('precio_extra', 0.0)
+                            if precio_extra > 0:
+                                # Los ingredientes adicionales se muestran como extras
+                                texto_ing = formatear_linea_ingrediente(
+                                    nombre_ing, cantidad_actual, True, precio_extra, cantidad, ancho_caracteres
+                                )
+                                contenido.append(texto_ing)
         else:
             # Formato normal para productos sin editar: cantidad + nombre + precio total (precio_base * cantidad)
             precio_total = precio_base * cantidad
@@ -652,6 +699,17 @@ def guardar_ticket_texto(pedido_info, tipo_ticket):
     contenido.append(linea_total)
     contenido.append("-" * ancho_caracteres)
     contenido.append(f"Forma de Pago: {pedido_info['forma_pago']}")
+    contenido.append("")
+    contenido.append("")
+    
+    # Estado de pago (solo en ticket de cocina)
+    if tipo_ticket == 'COCINA' and pedido_info.get('estado_pago'):
+        estado_pago = pedido_info['estado_pago']
+        # Alinear a la derecha con espacio entre las opciones
+        texto_estado = "Pagado                      Pendiente de pago"
+        espacios = " " * (ancho_caracteres - len(texto_estado))
+        contenido.append(f"{espacios}{texto_estado}")
+    
     contenido.append("=" * ancho_caracteres)
     contenido.append(formatear_texto_centrado(f"=== {tipo_ticket} ===", ancho_caracteres))
     

@@ -246,14 +246,14 @@ class Seleccion(ttk.Frame):
             ttk.Label(
                 info_frame,
                 text=producto.get("descripcion", ""),
-                font=('Arial', 9),
+                font=('Arial', 10),
                 foreground='gray'
             ).grid(row=1, column=0, sticky='w')
             
             ttk.Label(
                 info_frame,
-                text=f"${producto['precio']:.2f}",
-                font=('Arial', 10, 'bold'),
+                text=f"${producto['precio']:,.2f}",
+                font=('Arial', 12, 'bold'),
                 foreground='#27ae60'
             ).grid(row=2, column=0, sticky='w')
             

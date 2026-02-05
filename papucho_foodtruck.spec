@@ -8,6 +8,7 @@ a = Analysis(
     binaries=[],
     datas=[
         ('data', 'data'),  # Incluir toda la carpeta data
+        ('data/imagenes', 'data/imagenes'),  # Incluir explícitamente las imágenes
     ],
     hiddenimports=[],
     hookspath=[],

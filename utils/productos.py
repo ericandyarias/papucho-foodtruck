@@ -312,8 +312,8 @@ def calcular_precio_con_ingredientes(producto, modificaciones_ingredientes=None)
     precio_base = producto.get("precio", 0.0)
     ingredientes = producto.get("ingredientes", [])
     
-    # Si no hay ingredientes o modificaciones, retornar precio base
-    if not ingredientes or not modificaciones_ingredientes:
+    # Si no hay modificaciones, retornar precio base
+    if not modificaciones_ingredientes:
         return precio_base
     
     ajuste_total = 0.0
@@ -321,6 +321,10 @@ def calcular_precio_con_ingredientes(producto, modificaciones_ingredientes=None)
     # Importar aquí para evitar importación circular
     from utils.ingredientes import buscar_ingrediente_por_nombre
     
+    # Crear diccionario de ingredientes del producto por nombre
+    ingredientes_producto_dict = {ing.get("nombre", ""): ing for ing in ingredientes}
+    
+    # Procesar ingredientes del producto
     for ingrediente in ingredientes:
         nombre = ingrediente.get("nombre", "")
         cantidad_base = ingrediente.get("cantidad_base", 1)
@@ -347,5 +351,15 @@ def calcular_precio_con_ingredientes(producto, modificaciones_ingredientes=None)
             quitados = cantidad_base - cantidad_modificada
             ajuste_total -= quitados * precio_resta
         # Si cantidad_modificada == cantidad_base, no hay ajuste (ya está incluido en el precio base)
+    
+    # Procesar ingredientes adicionales que no están en el producto
+    for nombre, cantidad_adicional in modificaciones_ingredientes.items():
+        if nombre not in ingredientes_producto_dict and cantidad_adicional > 0:
+            # Este es un ingrediente adicional que no está en el producto
+            ingrediente_actualizado = buscar_ingrediente_por_nombre(nombre)
+            if ingrediente_actualizado:
+                precio_extra = ingrediente_actualizado.get("precio_extra", 0.0)
+                # Los ingredientes adicionales se cobran como extras
+                ajuste_total += cantidad_adicional * precio_extra
     
     return precio_base + ajuste_total

@@ -25,16 +25,6 @@
       "imagen": "ingredientes/ingrediente_2.png"
     },
     {
-      "id": 3,
-      "nombre": "Cheddar Hamb.",
-      "categorias": [
-        "Hamburguesas"
-      ],
-      "precio_extra": 300.0,
-      "precio_resta": 300.0,
-      "imagen": "ingredientes/ingrediente_3.png"
-    },
-    {
       "id": 4,
       "nombre": "Cheddar Salsa",
       "categorias": [
@@ -79,6 +69,26 @@
       "precio_extra": 300.0,
       "precio_resta": 300.0,
       "imagen": "ingredientes/ingrediente_7.png"
+    },
+    {
+      "id": 8,
+      "nombre": "Fetas de Cheddar H.",
+      "categorias": [
+        "Hamburguesas"
+      ],
+      "precio_extra": 300.0,
+      "precio_resta": 300.0,
+      "imagen": "ingredientes/ingrediente_8.png"
+    },
+    {
+      "id": 9,
+      "nombre": "Carne Ham.",
+      "categorias": [
+        "Hamburguesas"
+      ],
+      "precio_extra": 600.0,
+      "precio_resta": 600.0,
+      "imagen": "ingredientes/ingrediente_9.png"
     }
   ]
 }

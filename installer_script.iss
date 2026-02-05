@@ -40,8 +40,10 @@ Name: "quicklaunchicon"; Description: "{cm:CreateQuickLaunchIcon}"; GroupDescrip
 [Files]
 ; Archivo ejecutable principal
 Source: "dist\PapuchoFoodtruck.exe"; DestDir: "{app}"; Flags: ignoreversion
-; Carpeta data completa (productos, orden, tickets)
+; Carpeta data completa (productos, orden, tickets, imágenes)
 Source: "dist\data\*"; DestDir: "{app}\data"; Flags: ignoreversion recursesubdirs createallsubdirs
+; Incluir imágenes directamente desde la carpeta source (por si PyInstaller no las copió)
+Source: "data\imagenes\*"; DestDir: "{app}\data\imagenes"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
