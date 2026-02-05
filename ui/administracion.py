@@ -221,9 +221,17 @@ class VentanaAdministracion:
         
         # Configurar scroll con rueda del mouse
         def on_mousewheel_form(event):
-            canvas_formulario.yview_scroll(int(-1 * (event.delta / 120)), "units")
+            # Verificar que el canvas todavía existe antes de usarlo
+            try:
+                if canvas_formulario.winfo_exists():
+                    canvas_formulario.yview_scroll(int(-1 * (event.delta / 120)), "units")
+            except tk.TclError:
+                # El widget fue destruido, ignorar el error
+                pass
         
-        canvas_formulario.bind_all("<MouseWheel>", on_mousewheel_form)
+        # Vincular solo al canvas y al frame contenido (no globalmente)
+        canvas_formulario.bind("<MouseWheel>", on_mousewheel_form)
+        frame_contenido.bind("<MouseWheel>", on_mousewheel_form)
         
         canvas_formulario.grid(row=0, column=0, sticky='nsew')
         scrollbar_formulario.grid(row=0, column=1, sticky='ns')
@@ -436,7 +444,7 @@ class VentanaAdministracion:
                     producto['id'],
                     producto['categoria'],
                     producto['nombre'],
-                    f"${producto['precio']:.2f}",
+                    f"${producto['precio']:,.2f}",
                     producto.get('descripcion', '')
                 )
             )
@@ -723,9 +731,17 @@ class VentanaAdministracion:
         
         # Configurar scroll con rueda del mouse
         def on_mousewheel_form_ing(event):
-            canvas_formulario_ing.yview_scroll(int(-1 * (event.delta / 120)), "units")
+            # Verificar que el canvas todavía existe antes de usarlo
+            try:
+                if canvas_formulario_ing.winfo_exists():
+                    canvas_formulario_ing.yview_scroll(int(-1 * (event.delta / 120)), "units")
+            except tk.TclError:
+                # El widget fue destruido, ignorar el error
+                pass
         
-        canvas_formulario_ing.bind_all("<MouseWheel>", on_mousewheel_form_ing)
+        # Vincular solo al canvas y al frame contenido (no globalmente)
+        canvas_formulario_ing.bind("<MouseWheel>", on_mousewheel_form_ing)
+        frame_contenido_ing.bind("<MouseWheel>", on_mousewheel_form_ing)
         
         canvas_formulario_ing.grid(row=0, column=0, sticky='nsew')
         scrollbar_formulario_ing.grid(row=0, column=1, sticky='ns')

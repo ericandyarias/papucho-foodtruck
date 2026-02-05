@@ -1,0 +1,26 @@
+================================================
+               PAPUCHO FOODTRUCK                
+================================================
+                  Orden #0203                   
+================================================
+Cliente: messi
+Domicilio: Av rivadavia 501
+Hora estimada: 12:30
+PEDIDO:
+1 Hamburguesa Completa                    $8,800
+  Extra Tomate                             +$300
+  Extra Cheddar Salsa                      +$300
+1 Hamburguesa J y Q                       $7,800
+1 Gaseosa Coca, Fanta o Sprite 600ml      $2,700
+1 Fresh 1.5L                              $2,800
+------------------------------------------------
+TOTAL A PAGAR:                           $22,700
+------------------------------------------------
+Forma de Pago: Efectivo
+
+
+   Pagado                      Pendiente de pago
+================================================
+                 === COCINA ===                 
+                05/02/2026 15:04                
+================================================

@@ -1,0 +1,40 @@
+================================================
+               PAPUCHO FOODTRUCK                
+================================================
+                  Orden #0204                   
+================================================
+Cliente: Eric Andy Arias Rojas
+Domicilio: Av rivadavia 501
+Hora estimada: 12:45
+PEDIDO:
+1 Lomito Completo S/Papas                 $8,800
+  2 Extra Paleta                           +$600
+  2 Extra Huevo                            +$600
+1 Lomito Completo                        $10,500
+1 Lomito J y Q S/Papas                    $7,000
+1 Lomito Simple S/Papas                   $7,000
+1 Lomito Completo S/Papas                 $8,800
+1 Gaseosa Coca, Fanta o Sprite 600ml      $2,700
+1 Fresh 1.5L                              $2,800
+1 Gaseosa Coca, Fanta o Sprite 500ml      $2,500
+1 Botella de Agua Sin Gas 500ml             $800
+1 Milanesa Completa                       $9,500
+  Extra Queso                              +$300
+  Extra Tomate                             +$300
+1 Milanesa Completa                       $9,500
+1 Milanesa Simple                         $8,800
+1 MIlanesa J y Q                          $8,800
+  Extra Paleta                             +$300
+  Extra Queso                              +$300
+1 Milanesa Completo S/Papas               $8,800
+------------------------------------------------
+TOTAL A PAGAR:                           $98,700
+------------------------------------------------
+Forma de Pago: Transferencia
+
+
+   Pagado                      Pendiente de pago
+================================================
+                 === COCINA ===                 
+                05/02/2026 15:15                
+================================================
