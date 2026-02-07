@@ -11,7 +11,7 @@ import time
 class SplashScreen:
     """Pantalla de carga que se muestra al iniciar la aplicación"""
     
-    def __init__(self, root):
+    def __init__(self, root=None):
         self.root = root
         self.splash = None
         self.progress_var = None
@@ -20,18 +20,34 @@ class SplashScreen:
     
     def crear_splash(self):
         """Crea la ventana de splash screen"""
-        # Crear ventana de splash
-        self.splash = tk.Toplevel(self.root)
+        # Crear ventana de splash como ventana independiente (no Toplevel)
+        # Esto asegura que aparezca primero
+        if self.root:
+            self.splash = tk.Toplevel(self.root)
+            self.splash.transient(self.root)
+        else:
+            # Si no hay root, crear una ventana temporal solo para el splash
+            self.splash = tk.Tk()
+            self.splash.withdraw()  # Ocultar temporalmente para configurar
+        
         self.splash.title("Cargando...")
         self.splash.geometry("500x350")
         self.splash.resizable(False, False)
         
-        # Remover decoraciones de ventana (opcional, puede causar problemas en algunos sistemas)
-        # self.splash.overrideredirect(True)
+        # Remover decoraciones de ventana para que se vea más profesional
+        # self.splash.overrideredirect(True)  # Comentado para evitar problemas
         
-        # Centrar la ventana
-        self.splash.transient(self.root)
-        self.splash.grab_set()
+        # Centrar la ventana ANTES de mostrarla
+        self.splash.update_idletasks()
+        x = (self.splash.winfo_screenwidth() // 2) - (500 // 2)
+        y = (self.splash.winfo_screenheight() // 2) - (350 // 2)
+        self.splash.geometry(f"500x350+{x}+{y}")
+        
+        # Asegurar que el splash esté al frente
+        if self.root:
+            self.splash.grab_set()
+        else:
+            self.splash.deiconify()  # Mostrar si era una ventana temporal
         
         # Frame principal
         frame_principal = tk.Frame(self.splash, bg='#2c3e50')
@@ -78,14 +94,15 @@ class SplashScreen:
         )
         self.label_status.pack(pady=10)
         
-        # Centrar la ventana en la pantalla
-        self.splash.update_idletasks()
-        x = (self.splash.winfo_screenwidth() // 2) - (self.splash.winfo_width() // 2)
-        y = (self.splash.winfo_screenheight() // 2) - (self.splash.winfo_height() // 2)
-        self.splash.geometry(f"+{x}+{y}")
+        # Forzar actualización y mostrar el splash
+        self.splash.update()
+        self.splash.lift()  # Traer al frente
+        self.splash.attributes('-topmost', True)  # Mantener al frente
+        self.splash.update()
         
-        # Ocultar la ventana principal mientras se carga
-        self.root.withdraw()
+        # Ocultar la ventana principal mientras se carga (si existe)
+        if self.root:
+            self.root.withdraw()
     
     def actualizar_progreso(self, valor, mensaje=""):
         """Actualiza el progreso de la barra de carga"""
@@ -99,9 +116,18 @@ class SplashScreen:
     def cerrar(self):
         """Cierra la pantalla de carga y muestra la ventana principal"""
         if self.splash:
+            # Remover el atributo topmost antes de cerrar
+            try:
+                self.splash.attributes('-topmost', False)
+            except:
+                pass
             self.splash.destroy()
-        self.root.deiconify()  # Mostrar la ventana principal
-        self.root.focus_set()
+        
+        # Mostrar la ventana principal (si existe)
+        if self.root:
+            self.root.deiconify()  # Mostrar la ventana principal
+            self.root.focus_set()
+            self.root.lift()  # Traer al frente
 
 
 def mostrar_splash_con_carga(root, funcion_carga, *args, **kwargs):

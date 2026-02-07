@@ -20,20 +20,14 @@ except ImportError:
 
 def obtener_ruta_tickets():
     """Obtiene la ruta del directorio de tickets"""
-    return os.path.join(
-        os.path.dirname(os.path.dirname(__file__)),
-        'data',
-        'tickets'
-    )
+    from utils.rutas import obtener_ruta_data
+    return os.path.join(obtener_ruta_data(), 'tickets')
 
 
 def obtener_ruta_config():
     """Obtiene la ruta del archivo de configuración"""
-    return os.path.join(
-        os.path.dirname(os.path.dirname(__file__)),
-        'data',
-        'config.json'
-    )
+    from utils.rutas import obtener_ruta_json
+    return obtener_ruta_json('config.json')
 
 
 def cargar_configuracion():

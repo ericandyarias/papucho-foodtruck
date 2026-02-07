@@ -435,6 +435,12 @@
               "cantidad_base": 1
             }
           ]
+        },
+        {
+          "id": 33,
+          "nombre": "asasdsad",
+          "precio": 3333.0,
+          "descripcion": "asdasdsad"
         }
       ]
     },

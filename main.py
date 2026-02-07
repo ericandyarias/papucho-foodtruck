@@ -145,34 +145,40 @@ class AplicacionCaja:
 
 def main():
     """Función principal"""
+    # Crear ventana principal pero ocultarla inmediatamente
     root = tk.Tk()
+    root.withdraw()  # Ocultar inmediatamente, no se verá hasta que se muestre explícitamente
     
-    # Crear splash screen
+    # Crear splash screen PRIMERO (antes de cualquier otra cosa)
     splash = SplashScreen(root)
+    
+    # Forzar que el splash se muestre y esté al frente
+    splash.splash.update()
+    splash.splash.lift()
     
     def inicializar_aplicacion():
         """Función que inicializa la aplicación"""
         # Actualizar progreso
         splash.actualizar_progreso(20, "Cargando productos...")
-        root.update()
+        splash.splash.update()
         
         # Asegurar que las categorías fijas existan al iniciar
         cargar_productos()
         
         splash.actualizar_progreso(40, "Cargando ingredientes...")
-        root.update()
+        splash.splash.update()
         
         # Cargar ingredientes para verificar que todo esté bien
         cargar_ingredientes()
         
         splash.actualizar_progreso(60, "Inicializando componentes...")
-        root.update()
+        splash.splash.update()
         
-        # Crear la aplicación
+        # Crear la aplicación (pero la ventana sigue oculta)
         app = AplicacionCaja(root)
         
         splash.actualizar_progreso(80, "Preparando interfaz...")
-        root.update()
+        splash.splash.update()
         
         return app
     
@@ -180,13 +186,23 @@ def main():
     try:
         app = inicializar_aplicacion()
         splash.actualizar_progreso(100, "¡Listo!")
-        root.update()
+        splash.splash.update()
+        
         # Cerrar splash después de un pequeño delay para que se vea el progreso
-        root.after(300, splash.cerrar)
+        def cerrar_splash_y_mostrar():
+            splash.cerrar()
+            # Asegurar que la ventana principal esté visible y al frente
+            root.deiconify()
+            root.lift()
+            root.focus_set()
+        
+        splash.splash.after(300, cerrar_splash_y_mostrar)
     except Exception as e:
         splash.cerrar()
+        root.deiconify()
         raise
     
+    # Iniciar el loop principal (ahora la ventana principal está visible)
     root.mainloop()
 
 

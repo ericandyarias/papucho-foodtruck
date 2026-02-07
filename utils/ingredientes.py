@@ -8,16 +8,27 @@ import os
 
 def obtener_ruta_json():
     """Obtiene la ruta del archivo JSON de ingredientes"""
-    return os.path.join(
-        os.path.dirname(os.path.dirname(__file__)),
-        'data',
-        'ingredientes.json'
-    )
+    from utils.rutas import obtener_ruta_json as obtener_ruta_json_helper
+    return obtener_ruta_json_helper('ingredientes.json')
 
 
 def cargar_ingredientes():
     """Carga los ingredientes desde el archivo JSON"""
     ruta = obtener_ruta_json()
+    
+    # Si está instalado y el archivo no existe, intentar copiarlo desde la instalación
+    import sys
+    if getattr(sys, 'frozen', False):
+        from utils.rutas import obtener_ruta_data_instalacion
+        ruta_instalacion = os.path.join(obtener_ruta_data_instalacion(), 'ingredientes.json')
+        if not os.path.exists(ruta) and os.path.exists(ruta_instalacion):
+            import shutil
+            try:
+                os.makedirs(os.path.dirname(ruta), exist_ok=True)
+                shutil.copy2(ruta_instalacion, ruta)
+            except Exception:
+                pass  # Si falla, continuar y crear uno nuevo
+    
     try:
         with open(ruta, 'r', encoding='utf-8') as f:
             data = json.load(f)
@@ -39,8 +50,11 @@ def guardar_ingredientes(data):
     ruta = obtener_ruta_json()
     # Asegurar que el directorio existe
     os.makedirs(os.path.dirname(ruta), exist_ok=True)
+    # Escribir con flush explícito para asegurar que se guarde
     with open(ruta, 'w', encoding='utf-8') as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
+        f.flush()
+        os.fsync(f.fileno())  # Forzar escritura al disco
 
 
 def obtener_siguiente_id():

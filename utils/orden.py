@@ -6,11 +6,8 @@ import os
 
 def obtener_ruta_orden():
     """Obtiene la ruta del archivo de orden"""
-    return os.path.join(
-        os.path.dirname(os.path.dirname(__file__)),
-        'data',
-        'orden_actual.txt'
-    )
+    from utils.rutas import obtener_ruta_data
+    return os.path.join(obtener_ruta_data(), 'orden_actual.txt')
 
 
 def leer_numero_orden():
