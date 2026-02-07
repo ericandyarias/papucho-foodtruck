@@ -6,6 +6,7 @@ import tkinter as tk
 from tkinter import ttk
 import os
 import sys
+import threading
 
 # Agregar el directorio raíz al path para importar módulos
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
@@ -21,6 +22,7 @@ class Seleccion(ttk.Frame):
         self.productos_data = self.cargar_productos()
         self.categoria_actual = None
         self._imagenes_productos = []  # Lista para mantener referencias de imágenes
+        self._imagenes_cargando = {}  # Dict para rastrear qué imágenes se están cargando
         self.configurar_seleccion()
     
     def recargar_productos(self):
@@ -160,6 +162,7 @@ class Seleccion(ttk.Frame):
         
         # Limpiar referencias de imágenes anteriores
         self._imagenes_productos.clear()
+        self._imagenes_cargando.clear()
         
         # Actualizar el scrollregion del canvas para limpiar cualquier artefacto visual
         self.canvas_productos.update_idletasks()
@@ -186,6 +189,7 @@ class Seleccion(ttk.Frame):
         
         # Limpiar referencias de imágenes anteriores
         self._imagenes_productos.clear()
+        self._imagenes_cargando.clear()
         
         # Actualizar el scrollregion del canvas
         self.canvas_productos.update_idletasks()
@@ -212,7 +216,7 @@ class Seleccion(ttk.Frame):
             # Label para imagen (siempre ocupa el mismo espacio)
             label_imagen = tk.Label(
                 frame_imagen,
-                text="Sin\nimagen",
+                text="Cargando...",
                 font=('Arial', 8),
                 foreground='gray',
                 background='#d3d3d3',
@@ -221,16 +225,18 @@ class Seleccion(ttk.Frame):
             )
             label_imagen.pack(fill='both', expand=True)
             
-            # Cargar imagen si existe
+            # Cargar imagen de forma diferida (lazy loading)
             ruta_imagen = producto.get("imagen")
-            imagen_producto = None
+            producto_id = producto.get("id", idx)
             
             if ruta_imagen:
-                imagen_tk = cargar_imagen_tkinter(ruta_imagen, TAMANO_IMAGEN, TAMANO_IMAGEN)
-                if imagen_tk:
-                    label_imagen.config(image=imagen_tk, text='', background='white')
-                    imagen_producto = imagen_tk
-                    self._imagenes_productos.append(imagen_producto)
+                # Marcar como cargando
+                self._imagenes_cargando[producto_id] = True
+                # Cargar imagen en thread separado
+                self.cargar_imagen_diferida(label_imagen, ruta_imagen, TAMANO_IMAGEN, producto_id)
+            else:
+                # No hay imagen, mostrar placeholder
+                label_imagen.config(text="Sin\nimagen")
             
             # Información del producto (se mueve a la derecha)
             info_frame = ttk.Frame(frame_producto)
@@ -264,6 +270,57 @@ class Seleccion(ttk.Frame):
                 command=lambda p=producto: self.on_agregar_producto(p)
             )
             btn_agregar.grid(row=0, column=2, padx=10, pady=5, sticky='e')
+    
+    def cargar_imagen_diferida(self, label_imagen, ruta_imagen, tamano, producto_id):
+        """
+        Carga una imagen de forma diferida en un thread separado
+        
+        Args:
+            label_imagen: Label donde se mostrará la imagen
+            ruta_imagen: Ruta de la imagen a cargar
+            tamano: Tamaño de la imagen (ancho y alto)
+            producto_id: ID del producto para rastrear
+        """
+        def cargar():
+            """Función que se ejecuta en el thread separado"""
+            try:
+                # Cargar la imagen
+                imagen_tk = cargar_imagen_tkinter(ruta_imagen, tamano, tamano)
+                
+                if imagen_tk:
+                    # Actualizar el label en el thread principal
+                    self.after(0, lambda img=imagen_tk: self.actualizar_imagen_label(
+                        label_imagen, img, producto_id
+                    ))
+                else:
+                    # Si no se pudo cargar, mostrar placeholder
+                    self.after(0, lambda: self.actualizar_imagen_error(label_imagen, producto_id))
+            except Exception as e:
+                # En caso de error, mostrar placeholder
+                print(f"Error al cargar imagen {ruta_imagen}: {e}")
+                self.after(0, lambda: self.actualizar_imagen_error(label_imagen, producto_id))
+            finally:
+                # Marcar como no cargando
+                if producto_id in self._imagenes_cargando:
+                    del self._imagenes_cargando[producto_id]
+        
+        # Ejecutar en thread separado
+        thread = threading.Thread(target=cargar, daemon=True)
+        thread.start()
+    
+    def actualizar_imagen_label(self, label_imagen, imagen_tk, producto_id):
+        """Actualiza el label con la imagen cargada (se ejecuta en el thread principal)"""
+        try:
+            label_imagen.config(image=imagen_tk, text='', background='white')
+            # Mantener referencia para evitar que se elimine por el garbage collector
+            self._imagenes_productos.append(imagen_tk)
+        except Exception as e:
+            print(f"Error al actualizar imagen del producto {producto_id}: {e}")
+            label_imagen.config(text="Sin\nimagen")
+    
+    def actualizar_imagen_error(self, label_imagen, producto_id):
+        """Actualiza el label cuando hay error al cargar la imagen"""
+        label_imagen.config(text="Sin\nimagen")
     
     def on_agregar_producto(self, producto):
         """Callback cuando se agrega un producto al carrito"""

@@ -15,7 +15,9 @@ from ui.navegador import Navegador
 from ui.seleccion import Seleccion
 from ui.carrito import Carrito
 from ui.administracion import VentanaAdministracion
-from utils.productos import cargar_productos
+from ui.splash import SplashScreen
+from utils.productos import cargar_productos, guardar_productos
+from utils.ingredientes import cargar_ingredientes, guardar_ingredientes
 
 
 class AplicacionCaja:
@@ -24,6 +26,7 @@ class AplicacionCaja:
     def __init__(self, root):
         self.root = root
         self.configurar_ventana()
+        self.configurar_cierre()
         self.crear_componentes()
         self.configurar_layout()
     
@@ -41,6 +44,37 @@ class AplicacionCaja:
         
         # Configurar colores personalizados
         estilo.configure('Accent.TButton', foreground='white')
+    
+    def configurar_cierre(self):
+        """Configura el handler para cuando se cierra la ventana"""
+        def on_closing():
+            """Handler que se ejecuta al cerrar la aplicación"""
+            try:
+                # Forzar guardado de todos los datos
+                self.guardar_todos_los_datos()
+            except Exception as e:
+                # Si hay error al guardar, mostrar mensaje pero permitir cerrar
+                print(f"Error al guardar datos: {e}")
+            finally:
+                # Cerrar la aplicación
+                self.root.destroy()
+        
+        # Vincular el evento de cierre de ventana
+        self.root.protocol("WM_DELETE_WINDOW", on_closing)
+    
+    def guardar_todos_los_datos(self):
+        """Fuerza el guardado de todos los datos (productos e ingredientes)"""
+        try:
+            # Recargar y guardar productos (fuerza sincronización)
+            productos_data = cargar_productos()
+            guardar_productos(productos_data)
+            
+            # Recargar y guardar ingredientes (fuerza sincronización)
+            ingredientes_data = cargar_ingredientes()
+            guardar_ingredientes(ingredientes_data)
+        except Exception as e:
+            print(f"Error al guardar datos al cerrar: {e}")
+            raise
     
     def crear_componentes(self):
         """Crea todos los componentes de la UI"""
@@ -111,11 +145,48 @@ class AplicacionCaja:
 
 def main():
     """Función principal"""
-    # Asegurar que las categorías fijas existan al iniciar
-    cargar_productos()
-    
     root = tk.Tk()
-    app = AplicacionCaja(root)
+    
+    # Crear splash screen
+    splash = SplashScreen(root)
+    
+    def inicializar_aplicacion():
+        """Función que inicializa la aplicación"""
+        # Actualizar progreso
+        splash.actualizar_progreso(20, "Cargando productos...")
+        root.update()
+        
+        # Asegurar que las categorías fijas existan al iniciar
+        cargar_productos()
+        
+        splash.actualizar_progreso(40, "Cargando ingredientes...")
+        root.update()
+        
+        # Cargar ingredientes para verificar que todo esté bien
+        cargar_ingredientes()
+        
+        splash.actualizar_progreso(60, "Inicializando componentes...")
+        root.update()
+        
+        # Crear la aplicación
+        app = AplicacionCaja(root)
+        
+        splash.actualizar_progreso(80, "Preparando interfaz...")
+        root.update()
+        
+        return app
+    
+    # Inicializar aplicación con splash screen
+    try:
+        app = inicializar_aplicacion()
+        splash.actualizar_progreso(100, "¡Listo!")
+        root.update()
+        # Cerrar splash después de un pequeño delay para que se vea el progreso
+        root.after(300, splash.cerrar)
+    except Exception as e:
+        splash.cerrar()
+        raise
+    
     root.mainloop()
 
 
