@@ -1,5 +1,6 @@
 ; Script de Inno Setup para Papucho Foodtruck
 ; Instrucciones: Abre este archivo en Inno Setup Compiler y compila
+; O usa el script build_installer_completo.bat para automatizar todo
 
 #define MyAppName "Papucho Foodtruck"
 #define MyAppVersion "1.0"
@@ -24,11 +25,16 @@ InfoBeforeFile=
 InfoAfterFile=
 OutputDir=installer
 OutputBaseFilename=PapuchoFoodtruck_Setup
-SetupIconFile=
+SetupIconFile=icono.ico
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
 PrivilegesRequired=admin
+; Configuración adicional
+DisableProgramGroupPage=no
+DisableReadyPage=no
+DisableFinishedPage=no
+SetupLogging=yes
 
 [Languages]
 Name: "spanish"; MessagesFile: "compiler:Languages\Spanish.isl"
@@ -44,17 +50,27 @@ Source: "dist\PapuchoFoodtruck.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "dist\data\*"; DestDir: "{app}\data"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; Incluir imágenes directamente desde la carpeta source (por si PyInstaller no las copió)
 Source: "data\imagenes\*"; DestDir: "{app}\data\imagenes"; Flags: ignoreversion recursesubdirs createallsubdirs
+; Asegurar que ingredientes.json esté incluido si existe (opcional)
+Source: "data\ingredientes.json"; DestDir: "{app}\data"; Flags: ignoreversion; Check: FileExistsCheck('data\ingredientes.json')
 
 [Icons]
-Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
-Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
-Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: quicklaunchicon
+Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\{#MyAppExeName}"
+Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"; IconFilename: "{app}\{#MyAppExeName}"
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon; IconFilename: "{app}\{#MyAppExeName}"
+Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: quicklaunchicon; IconFilename: "{app}\{#MyAppExeName}"
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
 
 [Code]
+function FileExistsCheck(FileName: string): Boolean;
+var
+  FullPath: string;
+begin
+  FullPath := ExpandConstant('{src}\') + FileName;
+  Result := FileExists(FullPath);
+end;
+
 procedure InitializeWizard;
 begin
   WizardForm.WelcomeLabel1.Caption := 'Bienvenido al instalador de Papucho Foodtruck';

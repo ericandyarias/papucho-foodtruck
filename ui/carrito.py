@@ -14,6 +14,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from utils.orden import leer_numero_orden, incrementar_orden
 from utils.tickets import generar_tickets_pedido
 from utils.productos import calcular_precio_con_ingredientes
+from utils.tickets import tiene_modificaciones_reales
 from utils.ingredientes import buscar_ingrediente_por_nombre
 from utils.imagenes import obtener_ruta_completa_imagen, cargar_imagen_tkinter
 
@@ -354,16 +355,37 @@ class Carrito(ttk.Frame):
             # Mostrar precio base y ajustes si hay modificaciones
             precio_base = item['producto']['precio']
             fila_precio = 1
-            if precio_unitario != precio_base:
-                ttk.Label(
-                    info_frame,
-                    text=f"Base: ${precio_base:.2f} → ${precio_unitario:.2f} x {item['cantidad']} = ${subtotal:.2f}",
-                    font=('Arial', 9),
-                    foreground='#e67e22'
-                ).grid(row=fila_precio, column=0, sticky='w')
+            
+            # Verificar si hay modificaciones reales (cambios en ingredientes, independientemente del precio)
+            tiene_modificaciones = tiene_modificaciones_reales(item['producto'], modificaciones)
+            
+            # También verificar si hay ingredientes adicionales que no están en el producto
+            ingredientes = item['producto'].get('ingredientes', [])
+            ingredientes_producto_dict = {ing.get('nombre', '') for ing in ingredientes}
+            tiene_ingredientes_adicionales = any(
+                nombre_ing not in ingredientes_producto_dict and cantidad_actual > 0
+                for nombre_ing, cantidad_actual in modificaciones.items()
+            )
+            
+            if tiene_modificaciones or tiene_ingredientes_adicionales:
+                # Mostrar precio según si cambió o no
+                if precio_unitario != precio_base:
+                    ttk.Label(
+                        info_frame,
+                        text=f"Base: ${precio_base:.2f} → ${precio_unitario:.2f} x {item['cantidad']} = ${subtotal:.2f}",
+                        font=('Arial', 9),
+                        foreground='#e67e22'
+                    ).grid(row=fila_precio, column=0, sticky='w')
+                else:
+                    # Precio no cambió pero hay modificaciones (impacto neto = 0)
+                    ttk.Label(
+                        info_frame,
+                        text=f"${precio_unitario:.2f} x {item['cantidad']} = ${subtotal:.2f} (modificado)",
+                        font=('Arial', 9),
+                        foreground='#e67e22'
+                    ).grid(row=fila_precio, column=0, sticky='w')
                 
                 # Mostrar detalle de ingredientes modificados (extras y quitados)
-                ingredientes = item['producto'].get('ingredientes', [])
                 fila_detalle = fila_precio + 1
                 
                 # Importar función para buscar ingrediente por nombre
@@ -1139,7 +1161,7 @@ class Carrito(ttk.Frame):
         
         # Campo de hora estimada para domicilio (dos inputs separados)
         frame_hora_estimada = ttk.Frame(frame_domicilio)
-        ttk.Label(frame_domicilio, text="Hora estimada:", font=('Arial', 9)).pack(anchor='w', pady=(5, 5))
+        ttk.Label(frame_domicilio, text="Hora estimada (opcional):", font=('Arial', 9)).pack(anchor='w', pady=(5, 5))
         
         entry_hora_estimada_h = ttk.Entry(frame_hora_estimada, width=5, font=('Arial', 10), justify='center')
         entry_hora_estimada_h.pack(side='left')

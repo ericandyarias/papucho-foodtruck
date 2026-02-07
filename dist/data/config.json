@@ -1,8 +1,8 @@
 {
   "impresora": {
     "ancho_ticket": 80,
-    "modelo": "POS-80",
-    "comentarios": "Para impresoras térmicas de 80mm. Ajustado para usar todo el ancho disponible"
+    "modelo": "Xprinter EX-E200M",
+    "nombre_impresora": "XP-80C"
   },
   "tickets": {
     "incluir_fecha_hora": true,

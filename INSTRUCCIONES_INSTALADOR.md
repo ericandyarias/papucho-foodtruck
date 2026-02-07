@@ -101,18 +101,26 @@ papucho-foodtruck/
 
 ## 🔧 PERSONALIZACIÓN OPCIONAL
 
-### Agregar un Icono
+### Icono de la Aplicación
 
-1. Crea o descarga un archivo `icono.ico`
-2. Colócalo en la raíz del proyecto
-3. Edita `papucho_foodtruck.spec` y cambia:
-   ```python
-   icon=None,
-   ```
-   por:
-   ```python
-   icon='icono.ico',
-   ```
+El icono ya está configurado y se generará automáticamente. El archivo `icono.ico` se crea usando el script `crear_icono.py`.
+
+**El icono aparecerá en:**
+- El ejecutable `.exe` (en el Explorador de archivos)
+- El instalador (ventana del instalador)
+- El escritorio (si el usuario elige crear un acceso directo)
+- El menú de inicio
+- El Panel de Control → Programas y características (desinstalación)
+
+**Para regenerar el icono:**
+```bash
+python crear_icono.py
+```
+
+**Para usar un icono personalizado:**
+1. Crea o descarga un archivo `icono.ico` (debe ser formato ICO con múltiples tamaños)
+2. Reemplaza el archivo `icono.ico` en la raíz del proyecto
+3. El icono se usará automáticamente en la próxima compilación
 
 ### Cambiar el Nombre de la Aplicación
 
