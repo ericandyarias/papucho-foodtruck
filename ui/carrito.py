@@ -450,20 +450,29 @@ class Carrito(ttk.Frame):
                         ingrediente_actualizado = buscar_ingrediente_por_nombre(nombre_ing)
                         if ingrediente_actualizado:
                             precio_extra = ingrediente_actualizado.get('precio_extra', 0.0)
+                        else:
+                            precio_extra = 0.0
+                        
+                        # Mostrar siempre los ingredientes adicionales si tienen cantidad > 0, independientemente del precio
+                        precio_total_extra = precio_extra * cantidad_actual * item['cantidad']
+                        if cantidad_actual > 1:
                             if precio_extra > 0:
-                                precio_total_extra = precio_extra * cantidad_actual * item['cantidad']
-                                if cantidad_actual > 1:
-                                    texto_detalle = f"  {cantidad_actual} Extra {nombre_ing} +${precio_total_extra:.2f}"
-                                else:
-                                    texto_detalle = f"  Extra {nombre_ing} +${precio_total_extra:.2f}"
-                                
-                                ttk.Label(
-                                    info_frame,
-                                    text=texto_detalle,
-                                    font=('Arial', 8),
-                                    foreground='#e67e22'
-                                ).grid(row=fila_detalle, column=0, sticky='w')
-                                fila_detalle += 1
+                                texto_detalle = f"  {cantidad_actual} Extra {nombre_ing} +${precio_total_extra:.2f}"
+                            else:
+                                texto_detalle = f"  {cantidad_actual} Extra {nombre_ing}"
+                        else:
+                            if precio_extra > 0:
+                                texto_detalle = f"  Extra {nombre_ing} +${precio_total_extra:.2f}"
+                            else:
+                                texto_detalle = f"  Extra {nombre_ing}"
+                        
+                        ttk.Label(
+                            info_frame,
+                            text=texto_detalle,
+                            font=('Arial', 8),
+                            foreground='#e67e22'
+                        ).grid(row=fila_detalle, column=0, sticky='w')
+                        fila_detalle += 1
             else:
                 ttk.Label(
                     info_frame,

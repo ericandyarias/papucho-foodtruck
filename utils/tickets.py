@@ -195,7 +195,7 @@ def formatear_linea_producto(nombre, cantidad, precio_total, ancho=48):
 def tiene_modificaciones_reales(producto, modificaciones):
     """
     Verifica si un producto tiene modificaciones reales de ingredientes
-    (es decir, si alguna cantidad difiere de la cantidad base)
+    (es decir, si alguna cantidad difiere de la cantidad base o si hay ingredientes adicionales)
     
     Args:
         producto: Diccionario del producto con ingredientes
@@ -204,16 +204,24 @@ def tiene_modificaciones_reales(producto, modificaciones):
     Returns:
         bool: True si hay modificaciones reales, False en caso contrario
     """
-    if not modificaciones or not producto.get('ingredientes'):
+    if not modificaciones:
         return False
     
     ingredientes = producto.get('ingredientes', [])
+    ingredientes_producto_dict = {ing.get('nombre', '') for ing in ingredientes}
+    
+    # Verificar modificaciones en ingredientes del producto
     for ingrediente in ingredientes:
         nombre = ingrediente.get('nombre', '')
         cantidad_base = ingrediente.get('cantidad_base', 1)
         cantidad_actual = modificaciones.get(nombre, cantidad_base)
         
         if cantidad_actual != cantidad_base:
+            return True
+    
+    # Verificar ingredientes adicionales que no están en el producto
+    for nombre_ing, cantidad_actual in modificaciones.items():
+        if nombre_ing not in ingredientes_producto_dict and cantidad_actual > 0:
             return True
     
     return False
@@ -462,12 +470,14 @@ def imprimir_ticket_escpos(pedido_info, tipo_ticket):
                             ingrediente_actualizado = buscar_ingrediente_por_nombre(nombre_ing)
                             if ingrediente_actualizado:
                                 precio_extra = ingrediente_actualizado.get('precio_extra', 0.0)
-                                if precio_extra > 0:
-                                    # Los ingredientes adicionales se muestran como extras
-                                    texto_ing = formatear_linea_ingrediente(
-                                        nombre_ing, cantidad_actual, True, precio_extra, cantidad, ancho_caracteres
-                                    )
-                                    printer.text(texto_ing + "\n")
+                            else:
+                                precio_extra = 0.0
+                            
+                            # Mostrar siempre los ingredientes adicionales si tienen cantidad > 0, independientemente del precio
+                            texto_ing = formatear_linea_ingrediente(
+                                nombre_ing, cantidad_actual, True, precio_extra, cantidad, ancho_caracteres
+                            )
+                            printer.text(texto_ing + "\n")
             else:
                 # Formato normal para productos sin editar: cantidad + nombre + precio total (precio_base * cantidad)
                 precio_total = precio_base * cantidad
@@ -675,12 +685,14 @@ def guardar_ticket_texto(pedido_info, tipo_ticket):
                         ingrediente_actualizado = buscar_ingrediente_por_nombre(nombre_ing)
                         if ingrediente_actualizado:
                             precio_extra = ingrediente_actualizado.get('precio_extra', 0.0)
-                            if precio_extra > 0:
-                                # Los ingredientes adicionales se muestran como extras
-                                texto_ing = formatear_linea_ingrediente(
-                                    nombre_ing, cantidad_actual, True, precio_extra, cantidad, ancho_caracteres
-                                )
-                                contenido.append(texto_ing)
+                        else:
+                            precio_extra = 0.0
+                        
+                        # Mostrar siempre los ingredientes adicionales si tienen cantidad > 0, independientemente del precio
+                        texto_ing = formatear_linea_ingrediente(
+                            nombre_ing, cantidad_actual, True, precio_extra, cantidad, ancho_caracteres
+                        )
+                        contenido.append(texto_ing)
         else:
             # Formato normal para productos sin editar: cantidad + nombre + precio total (precio_base * cantidad)
             precio_total = precio_base * cantidad
