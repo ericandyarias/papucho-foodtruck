@@ -508,7 +508,9 @@ def imprimir_ticket_escpos(pedido_info, tipo_ticket):
                 # En ticket de COCINA mostrar opciones para tachar
                 printer.text("Forma de Pago:\n")
                 printer.text("\n")
-                printer.text("Efectivo            Transferencia                   Tarjeta\n")
+                # Centrar las opciones de pago
+                printer.set(align='center', bold=False)
+                printer.text("Efectivo      Transferencia      Tarjeta\n")
                 printer.text("\n")
             # En ticket de CLIENTE no mostrar nada
         else:
@@ -519,11 +521,10 @@ def imprimir_ticket_escpos(pedido_info, tipo_ticket):
         # Estado de pago (solo en ticket de cocina)
         if tipo_ticket == 'COCINA' and pedido_info.get('estado_pago'):
             estado_pago = pedido_info['estado_pago']
-            # Alinear a la derecha con espacio entre las opciones
+            # Centrar el estado de pago
             texto_estado = "Pagado                      Pendiente de pago"
-            espacios = " " * (ancho_caracteres - len(texto_estado))
-            printer.set(align='left', bold=False)
-            printer.text(f"{espacios}{texto_estado}\n")
+            printer.set(align='center', bold=False)
+            printer.text(f"{texto_estado}\n")
         
         # Separador grueso
         printer.set(align='center')
@@ -726,7 +727,8 @@ def guardar_ticket_texto(pedido_info, tipo_ticket):
             # En ticket de COCINA mostrar opciones para tachar
             contenido.append("Forma de Pago:")
             contenido.append("")
-            contenido.append("Efectivo            Transferencia                   Tarjeta")
+            # Centrar las opciones de pago
+            contenido.append(formatear_texto_centrado("Efectivo      Transferencia      Tarjeta", ancho_caracteres))
             contenido.append("")
         # En ticket de CLIENTE no mostrar nada (no agregar líneas)
     else:
@@ -737,10 +739,9 @@ def guardar_ticket_texto(pedido_info, tipo_ticket):
     # Estado de pago (solo en ticket de cocina)
     if tipo_ticket == 'COCINA' and pedido_info.get('estado_pago'):
         estado_pago = pedido_info['estado_pago']
-        # Alinear a la derecha con espacio entre las opciones
+        # Centrar el estado de pago
         texto_estado = "Pagado                      Pendiente de pago"
-        espacios = " " * (ancho_caracteres - len(texto_estado))
-        contenido.append(f"{espacios}{texto_estado}")
+        contenido.append(formatear_texto_centrado(texto_estado, ancho_caracteres))
     
     contenido.append("=" * ancho_caracteres)
     contenido.append(formatear_texto_centrado(f"=== {tipo_ticket} ===", ancho_caracteres))
