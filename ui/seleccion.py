@@ -94,6 +94,36 @@ class Seleccion(ttk.Frame):
         self.canvas_productos.bind('<Configure>', ajustar_ancho_frame)
         self.canvas_productos.configure(yscrollcommand=scrollbar.set)
         
+        # Variable para controlar si el scroll está activo
+        self.scroll_activo = False
+        
+        # Configurar scroll con rueda del mouse (solo cuando el puntero está sobre el panel)
+        def on_mousewheel(event):
+            # Solo hacer scroll si está activo (mouse sobre el panel)
+            if self.scroll_activo:
+                try:
+                    if self.canvas_productos.winfo_exists():
+                        self.canvas_productos.yview_scroll(int(-1 * (event.delta / 120)), "units")
+                except tk.TclError:
+                    pass
+        
+        # Activar scroll cuando el mouse entra al canvas o frame
+        def on_enter(event):
+            self.scroll_activo = True
+        
+        # Desactivar scroll cuando el mouse sale del canvas o frame
+        def on_leave(event):
+            self.scroll_activo = False
+        
+        # Vincular eventos de entrada/salida del mouse
+        self.canvas_productos.bind("<Enter>", on_enter)
+        self.canvas_productos.bind("<Leave>", on_leave)
+        self.frame_productos.bind("<Enter>", on_enter)
+        self.frame_productos.bind("<Leave>", on_leave)
+        
+        # Vincular el scroll globalmente pero controlado por scroll_activo
+        self.canvas_productos.bind_all("<MouseWheel>", on_mousewheel)
+        
         self.canvas_productos.grid(row=0, column=0, sticky='nsew')
         scrollbar.grid(row=0, column=1, sticky='ns')
         

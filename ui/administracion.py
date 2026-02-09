@@ -53,7 +53,7 @@ class VentanaAdministracion:
         """Crea y configura la ventana de administración"""
         self.ventana = tk.Toplevel(self.parent)
         self.ventana.title("Administración")
-        self.ventana.geometry("1500x750")
+        self.ventana.geometry("1400x700")
         self.ventana.resizable(True, True)
         
         # Centrar la ventana
@@ -86,17 +86,17 @@ class VentanaAdministracion:
         self.notebook.add(frame_ingredientes, text="🥗 Ingredientes")
         self.crear_pestaña_ingredientes(frame_ingredientes)
         
-        # Centrar la ventana en la pantalla
+        # Centrar la ventana horizontalmente y posicionarla arriba
         self.ventana.update_idletasks()
         x = (self.ventana.winfo_screenwidth() // 2) - (self.ventana.winfo_width() // 2)
-        y = (self.ventana.winfo_screenheight() // 2) - (self.ventana.winfo_height() // 2)
+        y = 50  # Posición fija cerca de la parte superior
         self.ventana.geometry(f"+{x}+{y}")
     
     def crear_pestaña_productos(self, parent):
         """Crea la pestaña de productos"""
         # Configurar grid
-        parent.columnconfigure(0, weight=2)  # Lista
-        parent.columnconfigure(1, weight=3)  # Formulario más ancho
+        parent.columnconfigure(0, weight=1)  # Lista (más pequeña)
+        parent.columnconfigure(1, weight=10)  # Formulario mucho más ancho
         parent.rowconfigure(0, weight=1)
         
         # Frame izquierdo: Lista de productos
@@ -149,19 +149,31 @@ class VentanaAdministracion:
         frame_tree.columnconfigure(0, weight=1)
         frame_tree.rowconfigure(0, weight=1)
         
-        # Scrollbar
-        scrollbar = ttk.Scrollbar(frame_tree)
-        scrollbar.grid(row=0, column=1, sticky='ns')
+        # Frame interno para el treeview con scroll
+        frame_interno = ttk.Frame(frame_tree)
+        frame_interno.grid(row=0, column=0, sticky='nsew')
+        frame_interno.columnconfigure(0, weight=1)
+        frame_interno.rowconfigure(0, weight=1)
+        
+        # Scrollbar vertical
+        scrollbar_vertical = ttk.Scrollbar(frame_interno, orient='vertical')
+        scrollbar_vertical.grid(row=0, column=1, sticky='ns')
+        
+        # Scrollbar horizontal
+        scrollbar_horizontal = ttk.Scrollbar(frame_interno, orient='horizontal')
+        scrollbar_horizontal.grid(row=1, column=0, sticky='ew')
         
         # Treeview (sin columna Categoría visible)
         self.tree = ttk.Treeview(
-            frame_tree,
+            frame_interno,
             columns=('ID', 'Categoría', 'Nombre', 'Precio', 'Descripción'),
             show='headings',
-            yscrollcommand=scrollbar.set,
+            yscrollcommand=scrollbar_vertical.set,
+            xscrollcommand=scrollbar_horizontal.set,
             selectmode='browse'
         )
-        scrollbar.config(command=self.tree.yview)
+        scrollbar_vertical.config(command=self.tree.yview)
+        scrollbar_horizontal.config(command=self.tree.xview)
         
         # Configurar columnas
         self.tree.heading('ID', text='ID')
@@ -172,9 +184,10 @@ class VentanaAdministracion:
         
         self.tree.column('ID', width=0, stretch=False)  # Ocultar columna ID
         self.tree.column('Categoría', width=0, stretch=False)  # Ocultar columna Categoría
-        self.tree.column('Nombre', width=250)
-        self.tree.column('Precio', width=120)
-        self.tree.column('Descripción', width=400)
+        self.tree.column('Nombre', width=200, minwidth=150, stretch=False)  # Ancho fijo
+        self.tree.column('Precio', width=120, minwidth=80, stretch=False)  # Ancho fijo
+        # Configurar Descripción con ancho MUY grande para forzar scroll horizontal siempre
+        self.tree.column('Descripción', width=350, minwidth=200, stretch=False)  # Ancho muy grande para forzar scroll
         
         self.tree.grid(row=0, column=0, sticky='nsew')
         self.tree.bind('<<TreeviewSelect>>', self.on_seleccionar_producto)

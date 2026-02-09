@@ -84,13 +84,19 @@ class Carrito(ttk.Frame):
         canvas.bind('<Configure>', ajustar_ancho_frame)
         canvas.configure(yscrollcommand=scrollbar.set)
         
-        # Configurar scroll con rueda del mouse
+        # Configurar scroll con rueda del mouse (solo dentro del carrito)
         def on_mousewheel(event):
-            canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+            # Verificar que el canvas todavía existe antes de usarlo
+            try:
+                if canvas.winfo_exists():
+                    canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+            except tk.TclError:
+                # El widget fue destruido, ignorar el error
+                pass
         
-        # Vincular el evento de scroll al canvas y al frame
-        canvas.bind_all("<MouseWheel>", on_mousewheel)
-        self.frame_items.bind_all("<MouseWheel>", on_mousewheel)
+        # Vincular el evento de scroll solo al canvas y al frame_items (no globalmente)
+        canvas.bind("<MouseWheel>", on_mousewheel)
+        self.frame_items.bind("<MouseWheel>", on_mousewheel)
         
         # Guardar referencia al canvas para poder accederlo desde otros métodos
         self.canvas_carrito = canvas
@@ -1190,7 +1196,8 @@ class Carrito(ttk.Frame):
                 entry_hora_estimada_h.config(foreground='black')
         
         def on_focus_out_hora_estimada_h(event):
-            if not entry_hora_estimada_h.get() or entry_hora_estimada_h.get().strip() == "":
+            valor = entry_hora_estimada_h.get().strip()
+            if not valor or valor == "":
                 entry_hora_estimada_h.delete(0, tk.END)
                 entry_hora_estimada_h.insert(0, "HH")
                 entry_hora_estimada_h.config(foreground='gray')
@@ -1201,13 +1208,28 @@ class Carrito(ttk.Frame):
                 entry_hora_estimada_m.config(foreground='black')
         
         def on_focus_out_hora_estimada_m(event):
-            if not entry_hora_estimada_m.get() or entry_hora_estimada_m.get().strip() == "":
+            valor = entry_hora_estimada_m.get().strip()
+            if not valor or valor == "":
                 entry_hora_estimada_m.delete(0, tk.END)
                 entry_hora_estimada_m.insert(0, "MM")
                 entry_hora_estimada_m.config(foreground='gray')
         
+        # Validar mientras se escribe (solo números)
+        def on_keypress_hora_h(event):
+            if event.char.isdigit() or event.keysym in ('BackSpace', 'Delete', 'Left', 'Right', 'Tab', 'Return'):
+                return True
+            return 'break'
+        
+        def on_keypress_hora_m(event):
+            if event.char.isdigit() or event.keysym in ('BackSpace', 'Delete', 'Left', 'Right', 'Tab', 'Return'):
+                return True
+            return 'break'
+        
+        entry_hora_estimada_h.bind('<KeyPress>', on_keypress_hora_h)
         entry_hora_estimada_h.bind('<FocusIn>', on_focus_in_hora_estimada_h)
         entry_hora_estimada_h.bind('<FocusOut>', on_focus_out_hora_estimada_h)
+        
+        entry_hora_estimada_m.bind('<KeyPress>', on_keypress_hora_m)
         entry_hora_estimada_m.bind('<FocusIn>', on_focus_in_hora_estimada_m)
         entry_hora_estimada_m.bind('<FocusOut>', on_focus_out_hora_estimada_m)
         
@@ -1238,7 +1260,8 @@ class Carrito(ttk.Frame):
                 entry_hora_retiro_h.config(foreground='black')
         
         def on_focus_out_hora_retiro_h(event):
-            if not entry_hora_retiro_h.get() or entry_hora_retiro_h.get().strip() == "":
+            valor = entry_hora_retiro_h.get().strip()
+            if not valor or valor == "":
                 entry_hora_retiro_h.delete(0, tk.END)
                 entry_hora_retiro_h.insert(0, "HH")
                 entry_hora_retiro_h.config(foreground='gray')
@@ -1249,13 +1272,28 @@ class Carrito(ttk.Frame):
                 entry_hora_retiro_m.config(foreground='black')
         
         def on_focus_out_hora_retiro_m(event):
-            if not entry_hora_retiro_m.get() or entry_hora_retiro_m.get().strip() == "":
+            valor = entry_hora_retiro_m.get().strip()
+            if not valor or valor == "":
                 entry_hora_retiro_m.delete(0, tk.END)
                 entry_hora_retiro_m.insert(0, "MM")
                 entry_hora_retiro_m.config(foreground='gray')
         
+        # Validar mientras se escribe (solo números)
+        def on_keypress_hora_retiro_h(event):
+            if event.char.isdigit() or event.keysym in ('BackSpace', 'Delete', 'Left', 'Right', 'Tab', 'Return'):
+                return True
+            return 'break'
+        
+        def on_keypress_hora_retiro_m(event):
+            if event.char.isdigit() or event.keysym in ('BackSpace', 'Delete', 'Left', 'Right', 'Tab', 'Return'):
+                return True
+            return 'break'
+        
+        entry_hora_retiro_h.bind('<KeyPress>', on_keypress_hora_retiro_h)
         entry_hora_retiro_h.bind('<FocusIn>', on_focus_in_hora_retiro_h)
         entry_hora_retiro_h.bind('<FocusOut>', on_focus_out_hora_retiro_h)
+        
+        entry_hora_retiro_m.bind('<KeyPress>', on_keypress_hora_retiro_m)
         entry_hora_retiro_m.bind('<FocusIn>', on_focus_in_hora_retiro_m)
         entry_hora_retiro_m.bind('<FocusOut>', on_focus_out_hora_retiro_m)
         
@@ -1273,10 +1311,11 @@ class Carrito(ttk.Frame):
         
         # Frame para forma de pago (columna derecha) - ya está creado en frame_columnas
         # Variable para forma de pago
-        self.var_forma_pago = tk.StringVar(value="Efectivo")
+        self.var_forma_pago = tk.StringVar(value="Desconocido")
         
         # Opciones de pago
         opciones_pago = [
+            ("Desconocido", "Desconocido"),
             ("Efectivo", "Efectivo"),
             ("Tarjeta", "Tarjeta"),
             ("Transferencia", "Transferencia")
@@ -1409,17 +1448,81 @@ class Carrito(ttk.Frame):
                 )
                 return
             domicilio_final = domicilio.strip()
-            # La hora estimada no es obligatoria, pero si está ingresada y no es el placeholder, la guardamos
+            # La hora estimada no es obligatoria, pero si está ingresada y no es el placeholder, la validamos
             if hora_estimada_h and hora_estimada_h.strip() and hora_estimada_h.strip() != "HH" and \
                hora_estimada_m and hora_estimada_m.strip() and hora_estimada_m.strip() != "MM":
+                # Validar horas (00-23)
+                try:
+                    hora_val = int(hora_estimada_h.strip())
+                    if hora_val < 0 or hora_val > 23:
+                        messagebox.showwarning(
+                            "Hora Inválida",
+                            "Las horas deben estar entre 00 y 23."
+                        )
+                        return
+                except ValueError:
+                    messagebox.showwarning(
+                        "Hora Inválida",
+                        "Por favor, ingrese un valor numérico válido para las horas."
+                    )
+                    return
+                
+                # Validar minutos (00-59)
+                try:
+                    minuto_val = int(hora_estimada_m.strip())
+                    if minuto_val < 0 or minuto_val > 59:
+                        messagebox.showwarning(
+                            "Minutos Inválidos",
+                            "Los minutos deben estar entre 00 y 59."
+                        )
+                        return
+                except ValueError:
+                    messagebox.showwarning(
+                        "Minutos Inválidos",
+                        "Por favor, ingrese un valor numérico válido para los minutos."
+                    )
+                    return
+                
                 hora_estimada_final = f"{hora_estimada_h.strip()}:{hora_estimada_m.strip()}"
             else:
                 hora_estimada_final = None
             hora_retiro_final = None
         elif tipo_pedido == "Retira en puesto":
-            # La hora no es obligatoria, pero si está ingresada y no es el placeholder, la guardamos
+            # La hora no es obligatoria, pero si está ingresada y no es el placeholder, la validamos
             if hora_retiro_h and hora_retiro_h.strip() and hora_retiro_h.strip() != "HH" and \
                hora_retiro_m and hora_retiro_m.strip() and hora_retiro_m.strip() != "MM":
+                # Validar horas (00-23)
+                try:
+                    hora_val = int(hora_retiro_h.strip())
+                    if hora_val < 0 or hora_val > 23:
+                        messagebox.showwarning(
+                            "Hora Inválida",
+                            "Las horas deben estar entre 00 y 23."
+                        )
+                        return
+                except ValueError:
+                    messagebox.showwarning(
+                        "Hora Inválida",
+                        "Por favor, ingrese un valor numérico válido para las horas."
+                    )
+                    return
+                
+                # Validar minutos (00-59)
+                try:
+                    minuto_val = int(hora_retiro_m.strip())
+                    if minuto_val < 0 or minuto_val > 59:
+                        messagebox.showwarning(
+                            "Minutos Inválidos",
+                            "Los minutos deben estar entre 00 y 59."
+                        )
+                        return
+                except ValueError:
+                    messagebox.showwarning(
+                        "Minutos Inválidos",
+                        "Por favor, ingrese un valor numérico válido para los minutos."
+                    )
+                    return
+                
                 hora_retiro_final = f"{hora_retiro_h.strip()}:{hora_retiro_m.strip()}"
             else:
                 hora_retiro_final = None

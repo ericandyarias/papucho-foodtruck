@@ -54,8 +54,8 @@
         "Lomitos",
         "Milanesas"
       ],
-      "precio_extra": 300.0,
-      "precio_resta": 300.0,
+      "precio_extra": 0.0,
+      "precio_resta": 0.0,
       "imagen": "ingredientes/ingrediente_6.png"
     },
     {
@@ -66,8 +66,8 @@
         "Lomitos",
         "Milanesas"
       ],
-      "precio_extra": 300.0,
-      "precio_resta": 300.0,
+      "precio_extra": 0.0,
+      "precio_resta": 0.0,
       "imagen": "ingredientes/ingrediente_7.png"
     },
     {

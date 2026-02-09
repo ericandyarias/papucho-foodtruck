@@ -500,9 +500,21 @@ def imprimir_ticket_escpos(pedido_info, tipo_ticket):
         
         # Forma de pago
         printer.set(align='left', bold=False)
-        printer.text(f"Forma de Pago: {pedido_info['forma_pago']}\n")
-        printer.text("\n")
-        printer.text("\n")
+        forma_pago = pedido_info['forma_pago']
+        
+        # Formato especial para "Desconocido"
+        if forma_pago == "Desconocido":
+            if tipo_ticket == 'COCINA':
+                # En ticket de COCINA mostrar opciones para tachar
+                printer.text("Forma de Pago:\n")
+                printer.text("\n")
+                printer.text("Efectivo            Transferencia                   Tarjeta\n")
+                printer.text("\n")
+            # En ticket de CLIENTE no mostrar nada
+        else:
+            printer.text(f"Forma de Pago: {forma_pago}\n")
+            printer.text("\n")
+            printer.text("\n")
         
         # Estado de pago (solo en ticket de cocina)
         if tipo_ticket == 'COCINA' and pedido_info.get('estado_pago'):
@@ -704,9 +716,23 @@ def guardar_ticket_texto(pedido_info, tipo_ticket):
     linea_total = "TOTAL A PAGAR:" + " " * (ancho_caracteres - len("TOTAL A PAGAR:") - len(f"${total:,.0f}")) + f"${total:,.0f}"
     contenido.append(linea_total)
     contenido.append("-" * ancho_caracteres)
-    contenido.append(f"Forma de Pago: {pedido_info['forma_pago']}")
-    contenido.append("")
-    contenido.append("")
+    
+    # Forma de pago
+    forma_pago = pedido_info['forma_pago']
+    
+    # Formato especial para "Desconocido"
+    if forma_pago == "Desconocido":
+        if tipo_ticket == 'COCINA':
+            # En ticket de COCINA mostrar opciones para tachar
+            contenido.append("Forma de Pago:")
+            contenido.append("")
+            contenido.append("Efectivo            Transferencia                   Tarjeta")
+            contenido.append("")
+        # En ticket de CLIENTE no mostrar nada (no agregar líneas)
+    else:
+        contenido.append(f"Forma de Pago: {forma_pago}")
+        contenido.append("")
+        contenido.append("")
     
     # Estado de pago (solo en ticket de cocina)
     if tipo_ticket == 'COCINA' and pedido_info.get('estado_pago'):
