@@ -349,9 +349,21 @@ def imprimir_ticket_escpos(pedido_info, tipo_ticket):
         printer.set(align='center')
         printer.text("=" * ancho_caracteres + "\n")
         
-        # Número de orden
-        printer.set(align='center', font='a', width=2, height=1, bold=True)
-        printer.text(f"Orden #{pedido_info['numero']:04d}\n")
+        # Marca del ticket (COCINA o CLIENTE) - sin fecha
+        printer.set(align='center', font='a', width=1, height=1, bold=True)
+        printer.text(f"=== {tipo_ticket} ===\n")
+        
+        # Número de orden y fecha en la misma línea
+        if config.get('tickets', {}).get('incluir_fecha_hora', True):
+            fecha_hora = datetime.now().strftime("%d/%m/%Y %H:%M")
+            texto_izq = f"Orden #{pedido_info['numero']:04d}"
+            texto_der = fecha_hora
+            espacios = " " * (ancho_caracteres - len(texto_izq) - len(texto_der))
+            printer.set(align='left', font='a', width=1, height=1, bold=False)
+            printer.text(texto_izq + espacios + texto_der + "\n")
+        else:
+            printer.set(align='center', font='a', width=1, height=1, bold=False)
+            printer.text(f"Orden #{pedido_info['numero']:04d}\n")
         
         # Separador
         printer.set(align='center')
@@ -506,15 +518,15 @@ def imprimir_ticket_escpos(pedido_info, tipo_ticket):
         if forma_pago == "Desconocido":
             if tipo_ticket == 'COCINA':
                 # En ticket de COCINA mostrar opciones para tachar
-                printer.text("Forma de Pago:\n")
+                printer.text("Método de Pago:\n")
                 printer.text("\n")
                 # Centrar las opciones de pago
                 printer.set(align='center', bold=False)
-                printer.text("Efectivo      Transferencia      Tarjeta\n")
+                printer.text("Efectivo      Transferencia/Qr      Tarjeta\n")
                 printer.text("\n")
             # En ticket de CLIENTE no mostrar nada
         else:
-            printer.text(f"Forma de Pago: {forma_pago}\n")
+            printer.text(f"Método de Pago: {forma_pago}\n")
             printer.text("\n")
             printer.text("\n")
         
@@ -526,23 +538,15 @@ def imprimir_ticket_escpos(pedido_info, tipo_ticket):
             printer.set(align='center', bold=False)
             printer.text(f"{texto_estado}\n")
         
-        # Separador grueso
-        printer.set(align='center')
-        printer.text("=" * ancho_caracteres + "\n")
-        
-        # Marca del ticket (COCINA o CLIENTE)
-        printer.set(align='center', font='a', width=1, height=1, bold=True)
-        printer.text(f"=== {tipo_ticket} ===\n")
-        
-        # Fecha y hora si está habilitado
-        if config.get('tickets', {}).get('incluir_fecha_hora', True):
-            fecha_hora = datetime.now().strftime("%d/%m/%Y %H:%M")
-            printer.set(align='center', font='a', width=1, height=1, bold=False)
-            printer.text(fecha_hora + "\n")
-        
         # Separador final
         printer.set(align='center')
         printer.text("=" * ancho_caracteres + "\n")
+        
+        # Aumentar espaciado en ticket del cliente
+        if tipo_ticket == 'CLIENTE':
+            printer.text("\n")
+            printer.text("\n")
+            printer.text("\n")
         
         # Espacios antes del corte
         lineas_corte = config.get('tickets', {}).get('lineas_corte', 3)
@@ -603,7 +607,20 @@ def guardar_ticket_texto(pedido_info, tipo_ticket):
     contenido.append("=" * ancho_caracteres)
     contenido.append(formatear_texto_centrado("PAPUCHO FOODTRUCK", ancho_caracteres))
     contenido.append("=" * ancho_caracteres)
-    contenido.append(formatear_texto_centrado(f"Orden #{pedido_info['numero']:04d}", ancho_caracteres))
+    
+    # Marca del ticket (COCINA o CLIENTE) - sin fecha
+    contenido.append(formatear_texto_centrado(f"=== {tipo_ticket} ===", ancho_caracteres))
+    
+    # Número de orden y fecha en la misma línea
+    if config.get('tickets', {}).get('incluir_fecha_hora', True):
+        fecha_hora = datetime.now().strftime("%d/%m/%Y %H:%M")
+        texto_izq = f"Orden #{pedido_info['numero']:04d}"
+        texto_der = fecha_hora
+        espacios = " " * (ancho_caracteres - len(texto_izq) - len(texto_der))
+        contenido.append(texto_izq + espacios + texto_der)
+    else:
+        contenido.append(formatear_texto_centrado(f"Orden #{pedido_info['numero']:04d}", ancho_caracteres))
+    
     contenido.append("=" * ancho_caracteres)
     contenido.append(f"Cliente: {pedido_info['nombre_cliente']}")
     
@@ -725,14 +742,14 @@ def guardar_ticket_texto(pedido_info, tipo_ticket):
     if forma_pago == "Desconocido":
         if tipo_ticket == 'COCINA':
             # En ticket de COCINA mostrar opciones para tachar
-            contenido.append("Forma de Pago:")
+            contenido.append("Método de Pago:")
             contenido.append("")
             # Centrar las opciones de pago
-            contenido.append(formatear_texto_centrado("Efectivo      Transferencia      Tarjeta", ancho_caracteres))
+            contenido.append(formatear_texto_centrado("Efectivo      Transferencia/Qr      Tarjeta", ancho_caracteres))
             contenido.append("")
         # En ticket de CLIENTE no mostrar nada (no agregar líneas)
     else:
-        contenido.append(f"Forma de Pago: {forma_pago}")
+        contenido.append(f"Método de Pago: {forma_pago}")
         contenido.append("")
         contenido.append("")
     
@@ -743,14 +760,14 @@ def guardar_ticket_texto(pedido_info, tipo_ticket):
         texto_estado = "Pagado                      Pendiente de pago"
         contenido.append(formatear_texto_centrado(texto_estado, ancho_caracteres))
     
+    # Separador final
     contenido.append("=" * ancho_caracteres)
-    contenido.append(formatear_texto_centrado(f"=== {tipo_ticket} ===", ancho_caracteres))
     
-    if config.get('tickets', {}).get('incluir_fecha_hora', True):
-        fecha_hora = datetime.now().strftime("%d/%m/%Y %H:%M")
-        contenido.append(formatear_texto_centrado(fecha_hora, ancho_caracteres))
-    
-    contenido.append("=" * ancho_caracteres)
+    # Aumentar espaciado en ticket del cliente
+    if tipo_ticket == 'CLIENTE':
+        contenido.append("")
+        contenido.append("")
+        contenido.append("")
     
     # Guardar en archivo
     with open(ruta_archivo, 'w', encoding='utf-8') as f:

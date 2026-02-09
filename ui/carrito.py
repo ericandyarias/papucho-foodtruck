@@ -1134,7 +1134,7 @@ class Carrito(ttk.Frame):
         frame_cliente.grid(row=0, column=0, sticky='nsew', padx=(0, 5))
         
         # Frame para forma de pago (columna derecha) - se ajusta dinámicamente
-        frame_pago = ttk.LabelFrame(frame_columnas, text="Forma de Pago", padding=10)
+        frame_pago = ttk.LabelFrame(frame_columnas, text="Método de Pago", padding=10)
         frame_pago.grid(row=0, column=1, sticky='nsew', padx=(5, 0))
         
         # Campo nombre del cliente
@@ -1318,7 +1318,7 @@ class Carrito(ttk.Frame):
             ("Desconocido", "Desconocido"),
             ("Efectivo", "Efectivo"),
             ("Tarjeta", "Tarjeta"),
-            ("Transferencia", "Transferencia")
+            ("Transferencia/Qr", "Transferencia/Qr")
         ]
         
         for texto, valor in opciones_pago:

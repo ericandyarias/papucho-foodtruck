@@ -28,7 +28,6 @@ class SplashScreen:
         else:
             # Si no hay root, crear una ventana temporal solo para el splash
             self.splash = tk.Tk()
-            self.splash.withdraw()  # Ocultar temporalmente para configurar
         
         self.splash.title("Cargando...")
         self.splash.geometry("500x350")
@@ -47,7 +46,8 @@ class SplashScreen:
         if self.root:
             self.splash.grab_set()
         else:
-            self.splash.deiconify()  # Mostrar si era una ventana temporal
+            # Si no hay root, mantener la ventana al frente
+            self.splash.attributes('-topmost', True)
         
         # Frame principal
         frame_principal = tk.Frame(self.splash, bg='#2c3e50')
@@ -121,7 +121,12 @@ class SplashScreen:
                 self.splash.attributes('-topmost', False)
             except:
                 pass
-            self.splash.destroy()
+            # Si es una ventana Tk (sin root), destruirla
+            if not self.root:
+                self.splash.destroy()
+            else:
+                # Si es Toplevel, destruirla
+                self.splash.destroy()
         
         # Mostrar la ventana principal (si existe)
         if self.root:

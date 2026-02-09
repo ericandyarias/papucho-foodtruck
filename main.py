@@ -3,9 +3,10 @@ Sistema de Caja para Foodtruck - PAPUCHO FOODTRUCK
 Aplicación principal que integra todos los componentes de la UI
 """
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
 import sys
 import os
+import time
 
 # Agregar el directorio raíz al path para importar módulos
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -49,15 +50,25 @@ class AplicacionCaja:
         """Configura el handler para cuando se cierra la ventana"""
         def on_closing():
             """Handler que se ejecuta al cerrar la aplicación"""
-            try:
-                # Forzar guardado de todos los datos
-                self.guardar_todos_los_datos()
-            except Exception as e:
-                # Si hay error al guardar, mostrar mensaje pero permitir cerrar
-                print(f"Error al guardar datos: {e}")
-            finally:
-                # Cerrar la aplicación
-                self.root.destroy()
+            # Mostrar ventana de confirmación
+            respuesta = messagebox.askyesno(
+                "Confirmar cierre",
+                "¿Está seguro que desea cerrar el sistema?",
+                icon='question'
+            )
+            
+            # Si el usuario confirma, proceder con el cierre
+            if respuesta:
+                try:
+                    # Forzar guardado de todos los datos
+                    self.guardar_todos_los_datos()
+                except Exception as e:
+                    # Si hay error al guardar, mostrar mensaje pero permitir cerrar
+                    print(f"Error al guardar datos: {e}")
+                finally:
+                    # Cerrar la aplicación
+                    self.root.destroy()
+            # Si el usuario cancela, no hacer nada (la ventana permanece abierta)
         
         # Vincular el evento de cierre de ventana
         self.root.protocol("WM_DELETE_WINDOW", on_closing)
@@ -145,40 +156,56 @@ class AplicacionCaja:
 
 def main():
     """Función principal"""
-    # Crear ventana principal pero ocultarla inmediatamente
+    # Crear ventana principal pero ocultarla inmediatamente (debe existir para el splash)
     root = tk.Tk()
     root.withdraw()  # Ocultar inmediatamente, no se verá hasta que se muestre explícitamente
     
-    # Crear splash screen PRIMERO (antes de cualquier otra cosa)
-    splash = SplashScreen(root)
+    # Crear splash screen PRIMERO (aparecerá antes que todo)
+    splash = SplashScreen(root=root)
     
     # Forzar que el splash se muestre y esté al frente
     splash.splash.update()
     splash.splash.lift()
+    splash.splash.attributes('-topmost', True)
+    
+    # Simular progreso inicial
+    splash.actualizar_progreso(5, "Iniciando sistema...")
+    splash.splash.update()
+    time.sleep(0.3)
     
     def inicializar_aplicacion():
         """Función que inicializa la aplicación"""
         # Actualizar progreso
-        splash.actualizar_progreso(20, "Cargando productos...")
+        splash.actualizar_progreso(15, "Cargando productos...")
         splash.splash.update()
+        time.sleep(0.2)
         
         # Asegurar que las categorías fijas existan al iniciar
         cargar_productos()
         
-        splash.actualizar_progreso(40, "Cargando ingredientes...")
+        splash.actualizar_progreso(35, "Cargando ingredientes...")
         splash.splash.update()
+        time.sleep(0.2)
         
         # Cargar ingredientes para verificar que todo esté bien
         cargar_ingredientes()
         
-        splash.actualizar_progreso(60, "Inicializando componentes...")
+        splash.actualizar_progreso(50, "Inicializando componentes...")
         splash.splash.update()
+        time.sleep(0.2)
         
         # Crear la aplicación (pero la ventana sigue oculta)
+        splash.actualizar_progreso(65, "Creando interfaz...")
+        splash.splash.update()
         app = AplicacionCaja(root)
         
-        splash.actualizar_progreso(80, "Preparando interfaz...")
+        splash.actualizar_progreso(85, "Preparando interfaz...")
         splash.splash.update()
+        time.sleep(0.2)
+        
+        splash.actualizar_progreso(95, "Finalizando...")
+        splash.splash.update()
+        time.sleep(0.2)
         
         return app
     
@@ -187,6 +214,7 @@ def main():
         app = inicializar_aplicacion()
         splash.actualizar_progreso(100, "¡Listo!")
         splash.splash.update()
+        time.sleep(0.3)
         
         # Cerrar splash después de un pequeño delay para que se vea el progreso
         def cerrar_splash_y_mostrar():
@@ -196,10 +224,11 @@ def main():
             root.lift()
             root.focus_set()
         
-        splash.splash.after(300, cerrar_splash_y_mostrar)
+        splash.splash.after(200, cerrar_splash_y_mostrar)
     except Exception as e:
         splash.cerrar()
-        root.deiconify()
+        if root:
+            root.deiconify()
         raise
     
     # Iniciar el loop principal (ahora la ventana principal está visible)
