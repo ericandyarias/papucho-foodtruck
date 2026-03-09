@@ -64,5 +64,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon='icono.ico',  # Icono de la aplicación
+    icon='Icono Hamburguesa.ico',  # Icono de la aplicación
 )

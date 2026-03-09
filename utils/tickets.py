@@ -518,7 +518,7 @@ def imprimir_ticket_escpos(pedido_info, tipo_ticket):
         if forma_pago == "Desconocido":
             if tipo_ticket == 'COCINA':
                 # En ticket de COCINA mostrar opciones para tachar
-                printer.text("Método de Pago:\n")
+                printer.text("Metodo de pago:\n")
                 printer.text("\n")
                 # Centrar las opciones de pago
                 printer.set(align='center', bold=False)
@@ -526,7 +526,7 @@ def imprimir_ticket_escpos(pedido_info, tipo_ticket):
                 printer.text("\n")
             # En ticket de CLIENTE no mostrar nada
         else:
-            printer.text(f"Método de Pago: {forma_pago}\n")
+            printer.text(f"Metodo de pago: {forma_pago}\n")
             printer.text("\n")
             printer.text("\n")
         
@@ -742,14 +742,14 @@ def guardar_ticket_texto(pedido_info, tipo_ticket):
     if forma_pago == "Desconocido":
         if tipo_ticket == 'COCINA':
             # En ticket de COCINA mostrar opciones para tachar
-            contenido.append("Método de Pago:")
+            contenido.append("Metodo de pago:")
             contenido.append("")
             # Centrar las opciones de pago
             contenido.append(formatear_texto_centrado("Efectivo      Transferencia/Qr      Tarjeta", ancho_caracteres))
             contenido.append("")
         # En ticket de CLIENTE no mostrar nada (no agregar líneas)
     else:
-        contenido.append(f"Método de Pago: {forma_pago}")
+        contenido.append(f"Metodo de pago: {forma_pago}")
         contenido.append("")
         contenido.append("")
     

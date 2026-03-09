@@ -24,8 +24,8 @@ LicenseFile=
 InfoBeforeFile=
 InfoAfterFile=
 OutputDir=installer
-OutputBaseFilename=PapuchoFoodtruck_Setup8
-SetupIconFile=icono.ico
+OutputBaseFilename=PapuchoFoodtruck_Setup9
+SetupIconFile=Icono Hamburguesa.ico
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
@@ -46,6 +46,8 @@ Name: "quicklaunchicon"; Description: "{cm:CreateQuickLaunchIcon}"; GroupDescrip
 [Files]
 ; Archivo ejecutable principal
 Source: "dist\PapuchoFoodtruck.exe"; DestDir: "{app}"; Flags: ignoreversion
+; Icono de la aplicación (para uso en la ventana)
+Source: "Icono Hamburguesa.ico"; DestDir: "{app}"; Flags: ignoreversion
 ; Carpeta data completa (productos, orden, tickets, imágenes)
 Source: "dist\data\*"; DestDir: "{app}\data"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; Incluir imágenes directamente desde la carpeta source (por si PyInstaller no las copió)

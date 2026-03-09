@@ -4,6 +4,35 @@
       "nombre": "Hamburguesas",
       "productos": [
         {
+          "id": 1,
+          "nombre": "Hamburguesa Completa",
+          "precio": 8800.0,
+          "descripcion": "Tomáte, lechuga, paleta, queso, huevo y fritas.",
+          "ingredientes": [
+            {
+              "nombre": "Jamon",
+              "cantidad_base": 1
+            },
+            {
+              "nombre": "Queso",
+              "cantidad_base": 1
+            },
+            {
+              "nombre": "Huevo",
+              "cantidad_base": 1
+            },
+            {
+              "nombre": "Tomate",
+              "cantidad_base": 1
+            },
+            {
+              "nombre": "Lechuga",
+              "cantidad_base": 1
+            }
+          ],
+          "imagen": "productos/producto_1.png"
+        },
+        {
           "id": 3,
           "nombre": "Hamburguesa Simple",
           "precio": 8000.0,
@@ -150,35 +179,6 @@
               "cantidad_base": 1
             }
           ]
-        },
-        {
-          "id": 1,
-          "nombre": "Hamburguesa Completa",
-          "precio": 8800.0,
-          "descripcion": "Tomáte, lechuga, paleta, queso, huevo y fritas.",
-          "ingredientes": [
-            {
-              "nombre": "Jamon",
-              "cantidad_base": 1
-            },
-            {
-              "nombre": "Queso",
-              "cantidad_base": 1
-            },
-            {
-              "nombre": "Huevo",
-              "cantidad_base": 1
-            },
-            {
-              "nombre": "Tomate",
-              "cantidad_base": 1
-            },
-            {
-              "nombre": "Lechuga",
-              "cantidad_base": 1
-            }
-          ],
-          "imagen": "productos/producto_1.png"
         }
       ]
     },
@@ -211,6 +211,10 @@
             {
               "nombre": "Lechuga",
               "cantidad_base": 1
+            },
+            {
+              "nombre": "Carne Lomito",
+              "cantidad_base": 1
             }
           ]
         },
@@ -228,6 +232,10 @@
             {
               "nombre": "Lechuga",
               "cantidad_base": 1
+            },
+            {
+              "nombre": "Carne Lomito",
+              "cantidad_base": 1
             }
           ]
         },
@@ -244,6 +252,10 @@
             },
             {
               "nombre": "Queso",
+              "cantidad_base": 1
+            },
+            {
+              "nombre": "Carne Lomito",
               "cantidad_base": 1
             }
           ]
@@ -273,6 +285,10 @@
             {
               "nombre": "Lechuga",
               "cantidad_base": 1
+            },
+            {
+              "nombre": "Carne Lomito",
+              "cantidad_base": 1
             }
           ],
           "imagen": "productos/producto_10.png"
@@ -291,6 +307,10 @@
             {
               "nombre": "Lechuga",
               "cantidad_base": 1
+            },
+            {
+              "nombre": "Carne Lomito",
+              "cantidad_base": 1
             }
           ]
         },
@@ -307,6 +327,10 @@
             },
             {
               "nombre": "Queso",
+              "cantidad_base": 1
+            },
+            {
+              "nombre": "Carne Lomito",
               "cantidad_base": 1
             }
           ]
@@ -341,6 +365,10 @@
             {
               "nombre": "Lechuga",
               "cantidad_base": 1
+            },
+            {
+              "nombre": "Milanesa",
+              "cantidad_base": 1
             }
           ]
         },
@@ -357,6 +385,10 @@
             {
               "nombre": "Lechuga",
               "cantidad_base": 1
+            },
+            {
+              "nombre": "Milanesa",
+              "cantidad_base": 1
             }
           ]
         },
@@ -372,6 +404,10 @@
             },
             {
               "nombre": "Queso",
+              "cantidad_base": 1
+            },
+            {
+              "nombre": "Milanesa",
               "cantidad_base": 1
             }
           ]
@@ -401,6 +437,10 @@
             {
               "nombre": "Lechuga",
               "cantidad_base": 1
+            },
+            {
+              "nombre": "Milanesa",
+              "cantidad_base": 1
             }
           ]
         },
@@ -417,6 +457,10 @@
             {
               "nombre": "Lechuga",
               "cantidad_base": 1
+            },
+            {
+              "nombre": "Milanesa",
+              "cantidad_base": 1
             }
           ]
         },
@@ -432,6 +476,10 @@
             },
             {
               "nombre": "Queso",
+              "cantidad_base": 1
+            },
+            {
+              "nombre": "Milanesa",
               "cantidad_base": 1
             }
           ]
@@ -491,19 +539,19 @@
           "nombre": "Empanadas (x12)",
           "precio": 16800.0,
           "descripcion": "Doce empanadas salteñas.",
-          "imagen": "productos/producto_18.png"
+          "imagen": "productos/producto_18.png",
+          "ingredientes": [
+            {
+              "nombre": "(Una/s Empanadas/s del precio x12)",
+              "cantidad_base": 12
+            }
+          ]
         }
       ]
     },
     {
       "nombre": "Bebidas",
       "productos": [
-        {
-          "id": 28,
-          "nombre": "Gaseosa Coca, Fanta o Sprite 600ml",
-          "precio": 2700.0,
-          "descripcion": "Gaseosa Coca-cola, Fanta o Sprite de 600ml."
-        },
         {
           "id": 32,
           "nombre": "Fresh 1.5L",
@@ -512,18 +560,39 @@
           "imagen": "productos/producto_32.png"
         },
         {
-          "id": 27,
-          "nombre": "Gaseosa Coca, Fanta o Sprite 500ml",
-          "precio": 2500.0,
-          "descripcion": "Gaseosa Coca-cola, Fanta o Sprite de 500ml.",
-          "imagen": "productos/producto_27.png"
-        },
-        {
           "id": 29,
           "nombre": "Botella de Agua Sin Gas 500ml",
           "precio": 800.0,
           "descripcion": "Botellita de Agua 500ml.",
           "imagen": "productos/producto_29.png"
+        },
+        {
+          "id": 28,
+          "nombre": "Cocacola 2.25Lt.",
+          "precio": 3500.0,
+          "descripcion": "Gaseosa Coca-cola 2.5Lts",
+          "imagen": "productos/producto_28.webp"
+        },
+        {
+          "id": 27,
+          "nombre": "Gaseosa Cocacola 500ml",
+          "precio": 2500.0,
+          "descripcion": "Gaseosa Coca-cola 500ml",
+          "imagen": "productos/producto_27.jpg"
+        },
+        {
+          "id": 33,
+          "nombre": "Fanta 500ml",
+          "precio": 2500.0,
+          "descripcion": "Gaseosa Fanta de 500ml.",
+          "imagen": "productos/producto_33.png"
+        },
+        {
+          "id": 34,
+          "nombre": "Sprite 500ml",
+          "precio": 2500.0,
+          "descripcion": "Sprite de 500ml",
+          "imagen": "productos/producto_34.png"
         }
       ]
     },

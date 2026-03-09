@@ -39,6 +39,22 @@ class AplicacionCaja:
         # Alternativa para Linux/Mac: self.root.attributes('-zoomed', True)
         self.root.minsize(1000, 600)
         
+        # Configurar icono de la ventana
+        try:
+            # Intentar obtener la ruta del icono
+            if getattr(sys, 'frozen', False):
+                # Si está instalado, el icono está en la carpeta de instalación
+                ruta_icono = os.path.join(os.path.dirname(sys.executable), 'Icono Hamburguesa.ico')
+            else:
+                # En desarrollo, el icono está en la raíz del proyecto
+                ruta_icono = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'Icono Hamburguesa.ico')
+            
+            if os.path.exists(ruta_icono):
+                self.root.iconbitmap(ruta_icono)
+        except Exception as e:
+            # Si falla, continuar sin icono (no crítico)
+            print(f"No se pudo cargar el icono: {e}")
+        
         # Configurar estilo
         estilo = ttk.Style()
         estilo.theme_use('clam')
