@@ -118,6 +118,16 @@
       ],
       "precio_extra": 1400.0,
       "precio_resta": 1400.0
+    },
+    {
+      "id": 13,
+      "nombre": "Papas pay.",
+      "categorias": [
+        "Panchos"
+      ],
+      "precio_extra": 500.0,
+      "precio_resta": 250.0,
+      "imagen": "ingredientes/ingrediente_13.jpg"
     }
   ]
 }

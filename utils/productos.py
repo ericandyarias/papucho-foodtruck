@@ -11,6 +11,7 @@ CATEGORIAS_FIJAS = [
     "Hamburguesas",
     "Lomitos",
     "Milanesas",
+    "Panchos",
     "Fritas",
     "Empanadas",
     "Bebidas"

@@ -487,6 +487,24 @@
       ]
     },
     {
+      "nombre": "Panchos",
+      "productos": [
+        {
+          "id": 35,
+          "nombre": "PANCHO PRUEBA",
+          "precio": 1500.0,
+          "descripcion": "panchito con ketchup y mayonesa y fritas.",
+          "imagen": "productos/producto_35.jpg",
+          "ingredientes": [
+            {
+              "nombre": "Papas pay.",
+              "cantidad_base": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
       "nombre": "Fritas",
       "productos": [
         {
