@@ -2,14 +2,45 @@
 Sistema de Caja para Foodtruck - PAPUCHO FOODTRUCK
 Aplicación principal que integra todos los componentes de la UI
 """
-import tkinter as tk
-from tkinter import ttk, messagebox
 import sys
 import os
-import time
 
 # Agregar el directorio raíz al path para importar módulos
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+# IMPORTANTE: Verificar instancia única ANTES de importar tkinter
+from utils.instancia_unica import verificar_instancia_unica, limpiar_archivo_lock, activar_instancia_existente
+
+# Verificar instancia única lo más temprano posible
+if not verificar_instancia_unica():
+    # Ya hay una instancia ejecutándose
+    # Intentar traer la ventana existente al frente
+    ventana_activada = activar_instancia_existente()
+    
+    # Siempre mostrar mensaje informativo
+    try:
+        import ctypes
+        if ventana_activada:
+            mensaje = "Papucho Foodtruck ya está ejecutándose.\n\nSe ha traído la ventana existente al frente."
+        else:
+            mensaje = "Papucho Foodtruck ya está ejecutándose.\n\nNo se pudo encontrar la ventana existente.\n\nPor favor, cierre la instancia actual antes de abrir una nueva."
+        
+        ctypes.windll.user32.MessageBoxW(
+            0,
+            mensaje,
+            "Aplicación ya en ejecución",
+            0x30  # MB_ICONWARNING
+        )
+    except Exception as e:
+        print(f"Papucho Foodtruck ya está ejecutándose. Error al mostrar mensaje: {e}")
+    
+    # Cerrar esta instancia
+    sys.exit(0)
+
+# Ahora sí importar tkinter y el resto de módulos
+import tkinter as tk
+from tkinter import ttk, messagebox
+import time
 
 from ui.encabezado import Encabezado
 from ui.navegador import Navegador
@@ -19,6 +50,8 @@ from ui.administracion import VentanaAdministracion
 from ui.splash import SplashScreen
 from utils.productos import cargar_productos, guardar_productos
 from utils.ingredientes import cargar_ingredientes, guardar_ingredientes
+from utils.backup import crear_backup_automatico
+from utils.rutas import migrar_datos_desde_instalacion
 
 
 class AplicacionCaja:
@@ -78,10 +111,14 @@ class AplicacionCaja:
                 try:
                     # Forzar guardado de todos los datos
                     self.guardar_todos_los_datos()
+                    # Crear backup automático después de guardar
+                    self.crear_backup_al_cerrar()
                 except Exception as e:
                     # Si hay error al guardar, mostrar mensaje pero permitir cerrar
                     print(f"Error al guardar datos: {e}")
                 finally:
+                    # Limpiar archivo de bloqueo antes de cerrar
+                    limpiar_archivo_lock()
                     # Cerrar la aplicación
                     self.root.destroy()
             # Si el usuario cancela, no hacer nada (la ventana permanece abierta)
@@ -102,6 +139,21 @@ class AplicacionCaja:
         except Exception as e:
             print(f"Error al guardar datos al cerrar: {e}")
             raise
+    
+    def crear_backup_al_cerrar(self):
+        """Crea un backup automático de todos los datos al cerrar la aplicación"""
+        try:
+            ruta_backup, backups_eliminados = crear_backup_automatico()
+            if ruta_backup:
+                # Backup creado exitosamente (no mostrar mensaje para no interrumpir el cierre)
+                print(f"Backup creado: {ruta_backup}")
+                if backups_eliminados > 0:
+                    print(f"Backups antiguos eliminados: {backups_eliminados}")
+            else:
+                print("No se pudo crear el backup (puede que no haya datos para respaldar)")
+        except Exception as e:
+            # No bloquear el cierre si falla el backup
+            print(f"Error al crear backup: {e}")
     
     def crear_componentes(self):
         """Crea todos los componentes de la UI"""
@@ -172,6 +224,7 @@ class AplicacionCaja:
 
 def main():
     """Función principal"""
+    # La verificación de instancia única ya se hizo al inicio del módulo
     # Crear ventana principal pero ocultarla inmediatamente (debe existir para el splash)
     root = tk.Tk()
     root.withdraw()  # Ocultar inmediatamente, no se verá hasta que se muestre explícitamente
@@ -191,6 +244,14 @@ def main():
     
     def inicializar_aplicacion():
         """Función que inicializa la aplicación"""
+        # Migrar datos antiguos desde instalación si existen (solo una vez)
+        splash.actualizar_progreso(10, "Verificando datos...")
+        splash.splash.update()
+        try:
+            migrar_datos_desde_instalacion()
+        except Exception:
+            pass  # No bloquear si falla la migración
+        
         # Actualizar progreso
         splash.actualizar_progreso(15, "Cargando productos...")
         splash.splash.update()

@@ -28,18 +28,8 @@ def cargar_productos():
     """Carga los productos desde el archivo JSON"""
     ruta = obtener_ruta_json()
     
-    # Si está instalado y el archivo no existe, intentar copiarlo desde la instalación
-    import sys
-    if getattr(sys, 'frozen', False):
-        from utils.rutas import obtener_ruta_data_instalacion
-        ruta_instalacion = os.path.join(obtener_ruta_data_instalacion(), 'productos.json')
-        if not os.path.exists(ruta) and os.path.exists(ruta_instalacion):
-            import shutil
-            try:
-                os.makedirs(os.path.dirname(ruta), exist_ok=True)
-                shutil.copy2(ruta_instalacion, ruta)
-            except Exception:
-                pass  # Si falla, continuar y crear uno nuevo
+    # La migración desde instalación antigua se hace en obtener_ruta_json()
+    # Aquí solo cargamos el archivo (ya está en AppData o se migró automáticamente)
     
     try:
         with open(ruta, 'r', encoding='utf-8') as f:

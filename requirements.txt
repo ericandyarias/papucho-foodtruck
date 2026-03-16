@@ -1,6 +1,7 @@
 # Dependencias del proyecto
 python-escpos>=3.1
 Pillow>=10.0.0
+pywin32>=300  # Para instancia única y funciones de Windows
 
 # Nota: python-escpos requiere:
 # - Pillow (instalado automáticamente)

@@ -23,6 +23,7 @@ class Seleccion(ttk.Frame):
         self.categoria_actual = None
         self._imagenes_productos = []  # Lista para mantener referencias de imágenes
         self._imagenes_cargando = {}  # Dict para rastrear qué imágenes se están cargando
+        self._lock_imagenes = threading.Lock()  # Mutex para proteger acceso a _imagenes_cargando
         self.configurar_seleccion()
     
     def recargar_productos(self):
@@ -190,9 +191,10 @@ class Seleccion(ttk.Frame):
         for widget in self.frame_productos.winfo_children():
             widget.destroy()
         
-        # Limpiar referencias de imágenes anteriores
-        self._imagenes_productos.clear()
-        self._imagenes_cargando.clear()
+        # Limpiar referencias de imágenes anteriores (protegido con mutex)
+        with self._lock_imagenes:
+            self._imagenes_productos.clear()
+            self._imagenes_cargando.clear()
         
         # Actualizar el scrollregion del canvas para limpiar cualquier artefacto visual
         self.canvas_productos.update_idletasks()
@@ -217,9 +219,10 @@ class Seleccion(ttk.Frame):
         for widget in self.frame_productos.winfo_children():
             widget.destroy()
         
-        # Limpiar referencias de imágenes anteriores
-        self._imagenes_productos.clear()
-        self._imagenes_cargando.clear()
+        # Limpiar referencias de imágenes anteriores (protegido con mutex)
+        with self._lock_imagenes:
+            self._imagenes_productos.clear()
+            self._imagenes_cargando.clear()
         
         # Actualizar el scrollregion del canvas
         self.canvas_productos.update_idletasks()
@@ -260,8 +263,9 @@ class Seleccion(ttk.Frame):
             producto_id = producto.get("id", idx)
             
             if ruta_imagen:
-                # Marcar como cargando
-                self._imagenes_cargando[producto_id] = True
+                # Marcar como cargando (protegido con mutex)
+                with self._lock_imagenes:
+                    self._imagenes_cargando[producto_id] = True
                 # Cargar imagen en thread separado
                 self.cargar_imagen_diferida(label_imagen, ruta_imagen, TAMANO_IMAGEN, producto_id)
             else:
@@ -330,9 +334,10 @@ class Seleccion(ttk.Frame):
                 print(f"Error al cargar imagen {ruta_imagen}: {e}")
                 self.after(0, lambda: self.actualizar_imagen_error(label_imagen, producto_id))
             finally:
-                # Marcar como no cargando
-                if producto_id in self._imagenes_cargando:
-                    del self._imagenes_cargando[producto_id]
+                # Marcar como no cargando (protegido con mutex)
+                with self._lock_imagenes:
+                    if producto_id in self._imagenes_cargando:
+                        del self._imagenes_cargando[producto_id]
         
         # Ejecutar en thread separado
         thread = threading.Thread(target=cargar, daemon=True)

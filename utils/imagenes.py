@@ -14,11 +14,10 @@ FORMATOS_PERMITIDOS = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp']
 def obtener_ruta_imagenes():
     """Obtiene la ruta de la carpeta de imágenes"""
     import sys
-    # Las imágenes siempre están en la carpeta de instalación (solo lectura)
-    # No se modifican, así que pueden estar en Program Files
+    # Las imágenes están SOLO en AppData cuando está instalado
     if getattr(sys, 'frozen', False):
-        from utils.rutas import obtener_ruta_data_instalacion
-        return os.path.join(obtener_ruta_data_instalacion(), 'imagenes')
+        from utils.rutas import obtener_ruta_appdata
+        return os.path.join(obtener_ruta_appdata(), 'imagenes')
     else:
         from utils.rutas import obtener_ruta_data
         return os.path.join(obtener_ruta_data(), 'imagenes')
@@ -27,8 +26,7 @@ def obtener_ruta_imagenes():
 def obtener_ruta_imagenes_productos():
     """Obtiene la ruta de la carpeta de imágenes de productos"""
     import sys
-    # Si está instalado, guardar nuevas imágenes en AppData
-    # Las imágenes existentes se leen desde la instalación
+    # Todas las imágenes están en AppData cuando está instalado
     if getattr(sys, 'frozen', False):
         from utils.rutas import obtener_ruta_appdata
         ruta = os.path.join(obtener_ruta_appdata(), 'imagenes', 'productos')
@@ -41,8 +39,7 @@ def obtener_ruta_imagenes_productos():
 def obtener_ruta_imagenes_ingredientes():
     """Obtiene la ruta de la carpeta de imágenes de ingredientes"""
     import sys
-    # Si está instalado, guardar nuevas imágenes en AppData
-    # Las imágenes existentes se leen desde la instalación
+    # Todas las imágenes están en AppData cuando está instalado
     if getattr(sys, 'frozen', False):
         from utils.rutas import obtener_ruta_appdata
         ruta = os.path.join(obtener_ruta_appdata(), 'imagenes', 'ingredientes')
@@ -120,7 +117,7 @@ def guardar_imagen_ingrediente(ruta_origen, ingrediente_id):
 def obtener_ruta_completa_imagen(ruta_relativa):
     """
     Obtiene la ruta completa de una imagen desde su ruta relativa
-    Busca primero en AppData (si está instalado) y luego en la instalación
+    Busca SOLO en AppData cuando está instalado (sin fallback a Program Files)
     
     Args:
         ruta_relativa: Ruta relativa guardada en JSON (ej: "productos/producto_1.jpg")
@@ -132,19 +129,26 @@ def obtener_ruta_completa_imagen(ruta_relativa):
         return None
     
     import sys
-    # Si está instalado, buscar primero en AppData, luego en instalación
+    # Si está instalado, buscar SOLO en AppData
     if getattr(sys, 'frozen', False):
-        from utils.rutas import obtener_ruta_appdata, obtener_ruta_data_instalacion
+        from utils.rutas import obtener_ruta_appdata
         
-        # Buscar primero en AppData (imágenes guardadas por el usuario)
+        # Buscar en AppData (todas las imágenes están aquí)
         ruta_appdata = os.path.join(obtener_ruta_appdata(), 'imagenes', ruta_relativa)
         if os.path.exists(ruta_appdata):
             return ruta_appdata
         
-        # Si no está en AppData, buscar en la instalación (imágenes originales)
+        # Si no existe en AppData, intentar migrar desde instalación antigua (solo una vez)
+        from utils.rutas import obtener_ruta_data_instalacion
         ruta_instalacion = os.path.join(obtener_ruta_data_instalacion(), 'imagenes', ruta_relativa)
         if os.path.exists(ruta_instalacion):
-            return ruta_instalacion
+            # Migrar imagen desde instalación antigua a AppData
+            try:
+                os.makedirs(os.path.dirname(ruta_appdata), exist_ok=True)
+                shutil.copy2(ruta_instalacion, ruta_appdata)
+                return ruta_appdata
+            except Exception:
+                pass  # Si falla la migración, continuar
         
         return None
     else:
