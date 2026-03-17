@@ -5,7 +5,7 @@ Los backups se guardan en una carpeta específica con fecha y hora
 import os
 import shutil
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 def obtener_ruta_backup():
@@ -50,8 +50,36 @@ def crear_backup():
         ruta_backup_base = obtener_ruta_backup()
         ruta_backup_completo = os.path.join(ruta_backup_base, nombre_backup)
         
-        # Copiar toda la carpeta AppData al backup
-        shutil.copytree(ruta_appdata, ruta_backup_completo)
+        # Copiar toda la carpeta AppData al backup,
+        # PERO sin incluir:
+        #   - La carpeta de tickets (para no acumular archivos de impresión)
+        #   - El archivo .app_lock (está bloqueado por el proceso actual)
+        #
+        # Estructura típica en AppData:
+        #   imagenes/
+        #   tickets/        <-- ESTA CARPETA NO SE RESPALDA
+        #   .app_lock       <-- ESTE ARCHIVO NO SE RESPALDA (está bloqueado)
+        #   config
+        #   ingredientes
+        #   orden_actual
+        #   productos
+        #
+        # Función personalizada para ignorar tickets y .app_lock
+        def ignore_func(dirname, filenames):
+            ignored = []
+            # Ignorar la carpeta tickets
+            if 'tickets' in filenames:
+                ignored.append('tickets')
+            # Ignorar el archivo .app_lock
+            if '.app_lock' in filenames:
+                ignored.append('.app_lock')
+            return ignored
+        
+        shutil.copytree(
+            ruta_appdata,
+            ruta_backup_completo,
+            ignore=ignore_func
+        )
         
         return ruta_backup_completo
     except Exception as e:
@@ -94,19 +122,20 @@ def limpiar_backups_antiguos(dias_a_mantener=30, max_backups=50):
         backups.sort(key=lambda x: x[0], reverse=True)
         
         eliminados = 0
-        fecha_limite = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-        fecha_limite = fecha_limite.replace(day=fecha_limite.day - dias_a_mantener)
+        # Calcular fecha límite usando timedelta (más seguro que replace)
+        fecha_limite = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=dias_a_mantener)
         
         # Eliminar backups antiguos
-        for fecha, ruta_backup in backups:
+        # Usar enumerate para obtener el índice directamente
+        for idx, (fecha, ruta_backup) in enumerate(backups):
             eliminar = False
             
             # Eliminar si es más antiguo que el límite de días
             if fecha < fecha_limite:
                 eliminar = True
             
-            # Eliminar si excede el máximo de backups
-            if backups.index((fecha, ruta_backup)) >= max_backups:
+            # Eliminar si excede el máximo de backups (índice >= max_backups significa que es el backup 51, 52, etc.)
+            if idx >= max_backups:
                 eliminar = True
             
             if eliminar:

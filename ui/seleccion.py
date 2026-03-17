@@ -143,6 +143,32 @@ class Seleccion(ttk.Frame):
         
         categorias = self.productos_data.get("categorias", [])
         
+        # Reordenar categorías visualmente:
+        # - Que "Panchos" vaya ANTEÚLTIMO
+        # - Que "Personalizados" vaya ÚLTIMO
+        # - El resto mantiene su orden original antes de esos dos
+        if categorias:
+            categoria_panchos = None
+            categoria_personalizados = None
+            categorias_otros = []
+            
+            for cat in categorias:
+                nombre = cat.get("nombre", "").lower()
+                if nombre == "panchos":
+                    categoria_panchos = cat
+                elif nombre == "personalizados":
+                    categoria_personalizados = cat
+                else:
+                    categorias_otros.append(cat)
+            
+            categorias = categorias_otros
+            # Agregar Panchos anteúltimo si existe
+            if categoria_panchos is not None:
+                categorias.append(categoria_panchos)
+            # Agregar Personalizados último si existe
+            if categoria_personalizados is not None:
+                categorias.append(categoria_personalizados)
+        
         if not categorias:
             return
         

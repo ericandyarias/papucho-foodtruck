@@ -141,19 +141,10 @@ class AplicacionCaja:
             raise
     
     def crear_backup_al_cerrar(self):
-        """Crea un backup automático de todos los datos al cerrar la aplicación"""
-        try:
-            ruta_backup, backups_eliminados = crear_backup_automatico()
-            if ruta_backup:
-                # Backup creado exitosamente (no mostrar mensaje para no interrumpir el cierre)
-                print(f"Backup creado: {ruta_backup}")
-                if backups_eliminados > 0:
-                    print(f"Backups antiguos eliminados: {backups_eliminados}")
-            else:
-                print("No se pudo crear el backup (puede que no haya datos para respaldar)")
-        except Exception as e:
-            # No bloquear el cierre si falla el backup
-            print(f"Error al crear backup: {e}")
+        """Crea un backup automático de todos los datos al cerrar la aplicación (OPCIONAL)"""
+        # Ya no se hace backup automático al cerrar
+        # El usuario puede hacer backup manualmente desde el menú
+        pass
     
     def crear_componentes(self):
         """Crea todos los componentes de la UI"""
@@ -182,6 +173,9 @@ class AplicacionCaja:
         
         # Conectar navegador con administración
         self.navegador.callback_administracion = self.abrir_administracion
+        
+        # Conectar navegador con backup
+        self.navegador.callback_backup = self.hacer_backup_manual
     
     def abrir_administracion(self):
         """Abre la ventana de administración"""
@@ -193,6 +187,74 @@ class AplicacionCaja:
     def actualizar_productos(self):
         """Actualiza los productos en la selección cuando se modifican en administración"""
         self.seleccion.recargar_productos()
+    
+    def hacer_backup_manual(self):
+        """Muestra ventana de confirmación y ejecuta backup manual"""
+        from utils.backup import crear_backup_automatico, obtener_ruta_backup
+        
+        # Mostrar ventana de confirmación
+        respuesta = messagebox.askyesno(
+            "Confirmar Backup",
+            "¿Desea crear un backup de todos los datos?\n\n"
+            "El backup se guardará en:\n"
+            f"{obtener_ruta_backup()}",
+            icon='question'
+        )
+        
+        if respuesta:
+            # Mostrar mensaje de progreso
+            ventana_progreso = tk.Toplevel(self.root)
+            ventana_progreso.title("Creando Backup")
+            ventana_progreso.geometry("400x150")
+            ventana_progreso.transient(self.root)
+            ventana_progreso.grab_set()
+            
+            # Centrar ventana
+            ventana_progreso.update_idletasks()
+            x = (ventana_progreso.winfo_screenwidth() // 2) - (ventana_progreso.winfo_width() // 2)
+            y = (ventana_progreso.winfo_screenheight() // 2) - (ventana_progreso.winfo_height() // 2)
+            ventana_progreso.geometry(f"+{x}+{y}")
+            
+            frame_progreso = ttk.Frame(ventana_progreso, padding=20)
+            frame_progreso.pack(fill='both', expand=True)
+            
+            label_progreso = ttk.Label(
+                frame_progreso,
+                text="Creando backup...\nPor favor espere.",
+                font=('Arial', 10)
+            )
+            label_progreso.pack(pady=10)
+            
+            ventana_progreso.update()
+            
+            try:
+                # Crear backup
+                ruta_backup, backups_eliminados = crear_backup_automatico()
+                
+                # Cerrar ventana de progreso
+                ventana_progreso.destroy()
+                
+                if ruta_backup:
+                    mensaje = f"✅ Backup creado exitosamente.\n\n"
+                    mensaje += f"Ubicación:\n{ruta_backup}\n\n"
+                    if backups_eliminados > 0:
+                        mensaje += f"Se eliminaron {backups_eliminados} backup(s) antiguo(s)."
+                    else:
+                        mensaje += "No se eliminaron backups antiguos."
+                    
+                    messagebox.showinfo("Backup Exitoso", mensaje)
+                else:
+                    messagebox.showerror(
+                        "Error",
+                        "No se pudo crear el backup.\n\n"
+                        "Verifique que haya datos para respaldar."
+                    )
+            except Exception as e:
+                ventana_progreso.destroy()
+                messagebox.showerror(
+                    "Error",
+                    f"Error al crear backup:\n{str(e)}"
+                )
     
     def configurar_layout(self):
         """Configura el layout usando grid"""

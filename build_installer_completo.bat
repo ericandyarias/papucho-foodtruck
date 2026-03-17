@@ -115,7 +115,7 @@ if "%INNO_SETUP_PATH%"=="" (
     echo 3. Selecciona installer_script.iss
     echo 4. Build ^> Compile (o presiona F9)
     echo.
-    echo El instalador se generará en: installer\PapuchoFoodtruck_Setup13.exe
+    echo El instalador se generará en: installer\PapuchoFoodtruck_Setup16.exe
     echo.
     pause
     exit /b 0
@@ -141,17 +141,17 @@ if errorlevel 1 (
 )
 
 REM Verificar que el instalador se creó
-if exist "installer\PapuchoFoodtruck_Setup13.exe" (
+if exist "installer\PapuchoFoodtruck_Setup16.exe" (
     echo.
     echo ========================================
     echo ¡INSTALADOR GENERADO EXITOSAMENTE!
     echo ========================================
     echo.
-    echo Ubicación: installer\PapuchoFoodtruck_Setup13.exe
+    echo Ubicación: installer\PapuchoFoodtruck_Setup16.exe
     echo.
     
     REM Obtener el tamaño del archivo
-    for %%A in ("installer\PapuchoFoodtruck_Setup13.exe") do set SIZE=%%~zA
+    for %%A in ("installer\PapuchoFoodtruck_Setup16.exe") do set SIZE=%%~zA
     set /a SIZE_MB=%SIZE:~0,-6%
     echo Tamaño aproximado: %SIZE_MB% MB
     echo.

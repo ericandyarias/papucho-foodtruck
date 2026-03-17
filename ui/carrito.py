@@ -1428,14 +1428,6 @@ class Carrito(ttk.Frame):
     
     def procesar_confirmacion(self, ventana, nombre_cliente, domicilio, hora_retiro_h, hora_retiro_m, hora_estimada_h, hora_estimada_m):
         """Procesa la confirmación del pedido"""
-        # Validar que se haya ingresado el nombre del cliente
-        if not nombre_cliente or not nombre_cliente.strip():
-            messagebox.showwarning(
-                "Campo Requerido",
-                "Por favor, ingrese el nombre del cliente."
-            )
-            return
-        
         # Obtener tipo de pedido seleccionado
         tipo_pedido = self.var_tipo_pedido.get()
         
@@ -1543,7 +1535,8 @@ class Carrito(ttk.Frame):
         total = self.calcular_total()
         pedido_info = {
             'numero': self.numero_orden,
-            'nombre_cliente': nombre_cliente.strip(),
+            # El nombre del cliente ahora es opcional; si viene vacío se guarda como cadena vacía
+            'nombre_cliente': nombre_cliente.strip() if nombre_cliente else "",
             'tipo': tipo_pedido,
             'domicilio': domicilio_final,
             'hora_retiro': hora_retiro_final,

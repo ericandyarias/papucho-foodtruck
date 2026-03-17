@@ -12,6 +12,7 @@ class Navegador(ttk.Frame):
     def __init__(self, parent):
         super().__init__(parent)
         self.callback_administracion = None
+        self.callback_backup = None
         self.configurar_navegador()
     
     def configurar_navegador(self):
@@ -44,6 +45,15 @@ class Navegador(ttk.Frame):
             command=self.on_administracion_click
         )
         self.btn_administracion.pack(pady=10, padx=10)
+        
+        # Botón Hacer Backup
+        self.btn_backup = ttk.Button(
+            self,
+            text="💾 Hacer Backup",
+            width=20,
+            command=self.on_backup_click
+        )
+        self.btn_backup.pack(pady=10, padx=10)
         
         # Espaciador
         ttk.Label(self, text="").pack(expand=True)
@@ -88,3 +98,8 @@ class Navegador(ttk.Frame):
         """Callback cuando se hace clic en Administración"""
         if self.callback_administracion:
             self.callback_administracion()
+    
+    def on_backup_click(self):
+        """Callback cuando se hace clic en Hacer Backup"""
+        if self.callback_backup:
+            self.callback_backup()
