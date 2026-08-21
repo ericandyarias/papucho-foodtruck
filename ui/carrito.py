@@ -17,6 +17,7 @@ from utils.productos import calcular_precio_con_ingredientes
 from utils.tickets import tiene_modificaciones_reales
 from utils.ingredientes import buscar_ingrediente_por_nombre
 from utils.imagenes import obtener_ruta_completa_imagen, cargar_imagen_tkinter
+from utils.scroll_rueda import habilitar_scroll_rueda, actualizar_region_scroll
 
 
 class Carrito(ttk.Frame):
@@ -62,6 +63,7 @@ class Carrito(ttk.Frame):
         frame_lista.grid(row=1, column=0, sticky='nsew', padx=10, pady=5)
         frame_lista.columnconfigure(0, weight=1)
         frame_lista.rowconfigure(0, weight=1)
+        self.frame_lista = frame_lista
         
         # Canvas con scrollbar para items
         canvas = tk.Canvas(frame_lista)
@@ -70,7 +72,7 @@ class Carrito(ttk.Frame):
         
         self.frame_items.bind(
             "<Configure>",
-            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+            lambda e: actualizar_region_scroll(canvas)
         )
         
         # Crear ventana del canvas y configurar para que se expanda
@@ -80,26 +82,14 @@ class Carrito(ttk.Frame):
         def ajustar_ancho_frame(event):
             canvas_width = event.width
             canvas.itemconfig(canvas_window, width=canvas_width)
+            actualizar_region_scroll(canvas)
         
         canvas.bind('<Configure>', ajustar_ancho_frame)
         canvas.configure(yscrollcommand=scrollbar.set)
         
-        # Configurar scroll con rueda del mouse (solo dentro del carrito)
-        def on_mousewheel(event):
-            # Verificar que el canvas todavía existe antes de usarlo
-            try:
-                if canvas.winfo_exists():
-                    canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
-            except tk.TclError:
-                # El widget fue destruido, ignorar el error
-                pass
-        
-        # Vincular el evento de scroll solo al canvas y al frame_items (no globalmente)
-        canvas.bind("<MouseWheel>", on_mousewheel)
-        self.frame_items.bind("<MouseWheel>", on_mousewheel)
-        
         # Guardar referencia al canvas para poder accederlo desde otros métodos
         self.canvas_carrito = canvas
+        habilitar_scroll_rueda(frame_lista, canvas)
         
         canvas.grid(row=0, column=0, sticky='nsew')
         scrollbar.grid(row=0, column=1, sticky='ns')
@@ -175,6 +165,8 @@ class Carrito(ttk.Frame):
         # Actualizar estilos de los botones cuando está vacío
         self.actualizar_estilo_boton_confirmar()
         self.actualizar_estilo_boton_borrar()
+        self.update_idletasks()
+        actualizar_region_scroll(self.canvas_carrito)
     
     def agregar_item(self, producto, cantidad=1):
         """Agrega un item al carrito (siempre agrega un nuevo item base)"""
@@ -564,6 +556,8 @@ class Carrito(ttk.Frame):
         # Actualizar estilos de los botones cuando hay contenido
         self.actualizar_estilo_boton_confirmar()
         self.actualizar_estilo_boton_borrar()
+        self.update_idletasks()
+        actualizar_region_scroll(self.canvas_carrito)
     
     def editar_ingredientes(self, item_idx):
         """Abre una ventana para editar los ingredientes de un item específico"""

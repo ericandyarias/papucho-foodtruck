@@ -12,6 +12,7 @@ import threading
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from utils.productos import cargar_productos
 from utils.imagenes import cargar_imagen_tkinter
+from utils.scroll_rueda import habilitar_scroll_rueda, actualizar_region_scroll
 
 
 class Seleccion(ttk.Frame):
@@ -73,6 +74,7 @@ class Seleccion(ttk.Frame):
         # Frame para productos
         frame_productos = ttk.LabelFrame(self, text="Productos", padding=10)
         frame_productos.grid(row=2, column=0, sticky='nsew', padx=10, pady=5)
+        self.panel_lista_productos = frame_productos
         
         # Canvas con scrollbar para productos
         self.canvas_productos = tk.Canvas(frame_productos)
@@ -81,7 +83,7 @@ class Seleccion(ttk.Frame):
         
         self.frame_productos.bind(
             "<Configure>",
-            lambda e: self.canvas_productos.configure(scrollregion=self.canvas_productos.bbox("all"))
+            lambda e: actualizar_region_scroll(self.canvas_productos)
         )
         
         # Crear ventana del canvas y configurar para que se expanda
@@ -91,39 +93,12 @@ class Seleccion(ttk.Frame):
         def ajustar_ancho_frame(event):
             canvas_width = event.width
             self.canvas_productos.itemconfig(self.canvas_window, width=canvas_width)
+            actualizar_region_scroll(self.canvas_productos)
         
         self.canvas_productos.bind('<Configure>', ajustar_ancho_frame)
         self.canvas_productos.configure(yscrollcommand=scrollbar.set)
         
-        # Variable para controlar si el scroll está activo
-        self.scroll_activo = False
-        
-        # Configurar scroll con rueda del mouse (solo cuando el puntero está sobre el panel)
-        def on_mousewheel(event):
-            # Solo hacer scroll si está activo (mouse sobre el panel)
-            if self.scroll_activo:
-                try:
-                    if self.canvas_productos.winfo_exists():
-                        self.canvas_productos.yview_scroll(int(-1 * (event.delta / 120)), "units")
-                except tk.TclError:
-                    pass
-        
-        # Activar scroll cuando el mouse entra al canvas o frame
-        def on_enter(event):
-            self.scroll_activo = True
-        
-        # Desactivar scroll cuando el mouse sale del canvas o frame
-        def on_leave(event):
-            self.scroll_activo = False
-        
-        # Vincular eventos de entrada/salida del mouse
-        self.canvas_productos.bind("<Enter>", on_enter)
-        self.canvas_productos.bind("<Leave>", on_leave)
-        self.frame_productos.bind("<Enter>", on_enter)
-        self.frame_productos.bind("<Leave>", on_leave)
-        
-        # Vincular el scroll globalmente pero controlado por scroll_activo
-        self.canvas_productos.bind_all("<MouseWheel>", on_mousewheel)
+        habilitar_scroll_rueda(frame_productos, self.canvas_productos)
         
         self.canvas_productos.grid(row=0, column=0, sticky='nsew')
         scrollbar.grid(row=0, column=1, sticky='ns')
@@ -224,7 +199,7 @@ class Seleccion(ttk.Frame):
         
         # Actualizar el scrollregion del canvas para limpiar cualquier artefacto visual
         self.canvas_productos.update_idletasks()
-        self.canvas_productos.configure(scrollregion=self.canvas_productos.bbox("all"))
+        actualizar_region_scroll(self.canvas_productos)
         
         # Buscar la categoría
         categoria = None
@@ -252,7 +227,7 @@ class Seleccion(ttk.Frame):
         
         # Actualizar el scrollregion del canvas
         self.canvas_productos.update_idletasks()
-        self.canvas_productos.configure(scrollregion=self.canvas_productos.bbox("all"))
+        actualizar_region_scroll(self.canvas_productos)
         
         # Configurar grid del frame de productos para que ocupen todo el ancho
         self.frame_productos.columnconfigure(0, weight=1)
@@ -330,6 +305,9 @@ class Seleccion(ttk.Frame):
                 command=lambda p=producto: self.on_agregar_producto(p)
             )
             btn_agregar.grid(row=0, column=2, padx=10, pady=5, sticky='e')
+
+        self.canvas_productos.update_idletasks()
+        actualizar_region_scroll(self.canvas_productos)
     
     def cargar_imagen_diferida(self, label_imagen, ruta_imagen, tamano, producto_id):
         """

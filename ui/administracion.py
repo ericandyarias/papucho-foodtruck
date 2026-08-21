@@ -29,6 +29,12 @@ from utils.imagenes import (
     guardar_imagen_producto, guardar_imagen_ingrediente,
     cargar_imagen_tkinter, eliminar_imagen
 )
+from utils.tickets import (
+    cargar_configuracion,
+    guardar_configuracion_impresora,
+    listar_impresoras_windows,
+    imprimir_ticket_prueba,
+)
 
 
 class VentanaAdministracion:
@@ -85,6 +91,18 @@ class VentanaAdministracion:
         frame_ingredientes = ttk.Frame(self.notebook, padding=10)
         self.notebook.add(frame_ingredientes, text="🥗 Ingredientes")
         self.crear_pestaña_ingredientes(frame_ingredientes)
+        
+        # Pestaña de Configuración
+        frame_configuracion = ttk.Frame(self.notebook, padding=10)
+        self.notebook.add(frame_configuracion, text="⚙️ Configuración")
+        try:
+            self.crear_pestaña_configuracion(frame_configuracion)
+        except Exception:
+            ttk.Label(
+                frame_configuracion,
+                text="No se pudo cargar la pestaña de configuración.\nEl resto de Administración sigue disponible.",
+                justify='center'
+            ).pack(pady=30)
         
         # Centrar la ventana horizontalmente y posicionarla arriba
         self.ventana.update_idletasks()
@@ -1294,3 +1312,186 @@ class VentanaAdministracion:
         except Exception:
             self.label_preview_imagen_ing.config(image='', text="Error al cargar")
             self.imagen_preview_ingrediente = None
+
+    def crear_pestaña_configuracion(self, parent):
+        """Pestaña de configuración (impresora de tickets 80 mm)."""
+        parent.columnconfigure(0, weight=1)
+        parent.rowconfigure(0, weight=1)
+
+        contenedor = ttk.Frame(parent)
+        contenedor.grid(row=0, column=0, sticky='nsew')
+        contenedor.columnconfigure(0, weight=1)
+
+        frame_impresora = ttk.LabelFrame(
+            contenedor,
+            text="Impresora de tickets (80 mm)",
+            padding=15
+        )
+        frame_impresora.grid(row=0, column=0, sticky='ew', padx=10, pady=10)
+        frame_impresora.columnconfigure(1, weight=1)
+
+        ttk.Label(
+            frame_impresora,
+            text="Se usa para los tickets de cocina y de cliente.\n"
+                 "Funciona con cualquier comandera térmica de 80 mm instalada en Windows.",
+            justify='left'
+        ).grid(row=0, column=0, columnspan=3, sticky='w', pady=(0, 12))
+
+        ttk.Label(frame_impresora, text="Impresora:").grid(row=1, column=0, sticky='w', padx=(0, 8), pady=5)
+
+        self.var_impresora = tk.StringVar()
+        self.combo_impresora = ttk.Combobox(
+            frame_impresora,
+            textvariable=self.var_impresora,
+            state='readonly',
+            width=50
+        )
+        self.combo_impresora.grid(row=1, column=1, sticky='ew', pady=5)
+
+        btn_actualizar = ttk.Button(
+            frame_impresora,
+            text="🔄 Actualizar lista",
+            command=self.actualizar_lista_impresoras,
+            width=20
+        )
+        btn_actualizar.grid(row=1, column=2, padx=(8, 0), pady=5)
+
+        self.label_impresora_estado = ttk.Label(
+            frame_impresora,
+            text="",
+            foreground='gray'
+        )
+        self.label_impresora_estado.grid(row=2, column=0, columnspan=3, sticky='w', pady=(4, 12))
+
+        frame_botones = ttk.Frame(frame_impresora)
+        frame_botones.grid(row=3, column=0, columnspan=3, sticky='w', pady=(8, 0))
+
+        ttk.Button(
+            frame_botones,
+            text="💾 Guardar cambios",
+            command=self.guardar_configuracion_impresora_ui,
+            width=22
+        ).pack(side='left', padx=(0, 8))
+
+        ttk.Button(
+            frame_botones,
+            text="🖨 Probar impresión",
+            command=self.probar_impresora_ui,
+            width=22
+        ).pack(side='left')
+
+        self.actualizar_lista_impresoras()
+
+    def actualizar_lista_impresoras(self):
+        """Carga las impresoras de Windows y selecciona la guardada si existe."""
+        try:
+            impresoras = listar_impresoras_windows() or []
+            if hasattr(self, 'combo_impresora'):
+                self.combo_impresora['values'] = impresoras
+
+            config = cargar_configuracion()
+            nombre_guardado = ''
+            if isinstance(config, dict):
+                nombre_guardado = (config.get('impresora', {}) or {}).get('nombre_impresora', '') or ''
+
+            if not impresoras:
+                self.var_impresora.set('')
+                self.label_impresora_estado.config(
+                    text="No se encontraron impresoras. Instale el controlador en Windows y actualice la lista.",
+                    foreground='#c0392b'
+                )
+                return
+
+            if nombre_guardado and nombre_guardado in impresoras:
+                self.var_impresora.set(nombre_guardado)
+                self.label_impresora_estado.config(
+                    text=f"Impresora guardada: {nombre_guardado}",
+                    foreground='#27ae60'
+                )
+            elif nombre_guardado:
+                self.var_impresora.set(impresoras[0])
+                self.label_impresora_estado.config(
+                    text=f"La impresora guardada ({nombre_guardado}) no está instalada. Elija otra y guarde los cambios.",
+                    foreground='#e67e22'
+                )
+            else:
+                self.var_impresora.set(impresoras[0])
+                self.label_impresora_estado.config(
+                    text="Aún no hay impresora guardada. Elija una y presione Guardar cambios.",
+                    foreground='#e67e22'
+                )
+        except Exception:
+            try:
+                self.label_impresora_estado.config(
+                    text="No se pudo leer la lista de impresoras. Intente actualizar de nuevo.",
+                    foreground='#c0392b'
+                )
+            except Exception:
+                pass
+
+    def guardar_configuracion_impresora_ui(self):
+        """Guarda la impresora elegida para los próximos pedidos."""
+        try:
+            nombre = (self.var_impresora.get() or '').strip()
+        except Exception:
+            nombre = ''
+        if not nombre:
+            messagebox.showwarning(
+                "Configuración",
+                "Seleccione una impresora de la lista.",
+                parent=self.ventana
+            )
+            return
+
+        try:
+            guardar_configuracion_impresora(nombre)
+            self.label_impresora_estado.config(
+                text=f"Impresora guardada: {nombre}",
+                foreground='#27ae60'
+            )
+            messagebox.showinfo(
+                "Cambios realizados",
+                f"La impresora se guardó correctamente.\n\n"
+                f"Se usará en los próximos tickets:\n{nombre}",
+                parent=self.ventana
+            )
+        except Exception as e:
+            messagebox.showerror(
+                "Error",
+                f"No se pudo guardar la configuración.\nLos datos anteriores se mantienen.\n\n{str(e)}",
+                parent=self.ventana
+            )
+
+    def probar_impresora_ui(self):
+        """Envía un ticket de prueba a la impresora seleccionada."""
+        try:
+            nombre = (self.var_impresora.get() or '').strip()
+        except Exception:
+            nombre = ''
+        if not nombre:
+            messagebox.showwarning(
+                "Configuración",
+                "Seleccione una impresora de la lista.",
+                parent=self.ventana
+            )
+            return
+
+        try:
+            exito = imprimir_ticket_prueba(nombre)
+        except Exception:
+            exito = False
+
+        if exito:
+            messagebox.showinfo(
+                "Prueba de impresión",
+                f"Se envió un ticket de prueba a:\n{nombre}\n\n"
+                "Si no sale papel, revise que esté encendida y que el controlador sea el de una térmica 80 mm.",
+                parent=self.ventana
+            )
+        else:
+            messagebox.showerror(
+                "Prueba de impresión",
+                f"No se pudo imprimir en:\n{nombre}\n\n"
+                "Verifique que esté encendida, conectada y con el driver instalado en Windows.",
+                parent=self.ventana
+            )

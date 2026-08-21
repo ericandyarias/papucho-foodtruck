@@ -30,42 +30,86 @@ def obtener_ruta_config():
     return obtener_ruta_json('config.json')
 
 
+def _config_por_defecto():
+    return {
+        "impresora": {
+            "ancho_ticket": 80,
+            "modelo": "Térmica 80mm",
+            "nombre_impresora": ""
+        },
+        "tickets": {
+            "incluir_fecha_hora": True,
+            "lineas_corte": 3
+        }
+    }
+
+
 def cargar_configuracion():
-    """Carga la configuración desde el archivo JSON"""
+    """Carga la configuración desde el archivo JSON sin pisarlo si está dañado."""
     ruta_config = obtener_ruta_config()
     try:
         with open(ruta_config, 'r', encoding='utf-8') as f:
             config = json.load(f)
-            return config
+        if not isinstance(config, dict):
+            return _config_por_defecto()
+        config.setdefault("impresora", {})
+        config.setdefault("tickets", {"incluir_fecha_hora": True, "lineas_corte": 3})
+        if not isinstance(config.get("impresora"), dict):
+            config["impresora"] = _config_por_defecto()["impresora"]
+        return config
     except FileNotFoundError:
-        # Configuración por defecto si no existe el archivo
-        config_default = {
-            "impresora": {
-                "ancho_ticket": 80,
-                "modelo": "Xprinter EX-E200M",
-                "nombre_impresora": "XP-80C"  # Nombre de la impresora en Windows
-            },
-            "tickets": {
-                "incluir_fecha_hora": True,
-                "lineas_corte": 3
-            }
-        }
-        # Crear el archivo de configuración
-        os.makedirs(os.path.dirname(ruta_config), exist_ok=True)
-        with open(ruta_config, 'w', encoding='utf-8') as f:
-            json.dump(config_default, f, indent=2, ensure_ascii=False)
+        config_default = _config_por_defecto()
+        try:
+            _guardar_json_atomico(ruta_config, config_default)
+        except Exception:
+            pass
         return config_default
     except Exception as e:
         print(f"Error al cargar configuración: {e}")
-        # Retornar configuración por defecto
-        return {
-            "impresora": {
-                "ancho_ticket": 80,
-                "modelo": "Xprinter EX-E200M",
-                "nombre_impresora": "XP-80C"
-            },
-            "tickets": {"incluir_fecha_hora": True, "lineas_corte": 3}
-        }
+        return _config_por_defecto()
+
+
+def _guardar_json_atomico(ruta, datos):
+    """Escribe el JSON en un temporal y lo reemplaza, para no corromper el archivo."""
+    carpeta = os.path.dirname(ruta)
+    os.makedirs(carpeta, exist_ok=True)
+    ruta_temporal = ruta + ".tmp"
+    try:
+        with open(ruta_temporal, "w", encoding="utf-8") as f:
+            json.dump(datos, f, indent=2, ensure_ascii=False)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(ruta_temporal, ruta)
+    except Exception:
+        try:
+            if os.path.exists(ruta_temporal):
+                os.remove(ruta_temporal)
+        except Exception:
+            pass
+        raise
+
+
+def guardar_configuracion_impresora(nombre_impresora):
+    """
+    Guarda la impresora de tickets (térmica 80 mm) sin perder el resto de la config.
+    """
+    nombre = (nombre_impresora or "").strip()
+    if not nombre:
+        raise ValueError("Seleccione una impresora")
+
+    config = cargar_configuracion()
+    if not isinstance(config, dict):
+        config = _config_por_defecto()
+    config.setdefault("impresora", {})
+    if not isinstance(config.get("impresora"), dict):
+        config["impresora"] = {}
+    config.setdefault("tickets", {"incluir_fecha_hora": True, "lineas_corte": 3})
+    config["impresora"]["nombre_impresora"] = nombre
+    config["impresora"]["ancho_ticket"] = 80
+    config["impresora"]["modelo"] = "Térmica 80mm"
+
+    _guardar_json_atomico(obtener_ruta_config(), config)
+    return config
 
 
 def listar_impresoras_windows():
@@ -122,11 +166,11 @@ def obtener_impresora():
         return None
     
     config = cargar_configuracion()
-    nombre_impresora = config.get('impresora', {}).get('nombre_impresora', 'XP-80C')
+    nombre_impresora = config.get('impresora', {}).get('nombre_impresora', '')
     
     if not nombre_impresora:
         print("Error: No se ha configurado el nombre de la impresora")
-        print("Configura 'nombre_impresora' en data/config.json")
+        print("Configure la impresora en Administración > Configuración")
         return None
     
     # Verificar que la impresora existe
@@ -139,7 +183,7 @@ def obtener_impresora():
                 print(f"  - {imp}")
         else:
             print("  (No se pudieron listar las impresoras)")
-        print(f"\nActualiza 'nombre_impresora' en data/config.json con el nombre correcto")
+        print("Elija la impresora en Administración > Configuración")
         return None
     
     try:
@@ -814,10 +858,10 @@ def generar_tickets_pedido(pedido_info, imprimir_automatico=True, guardar_respal
     return resultado
 
 
-def imprimir_ticket_prueba():
+def imprimir_ticket_prueba(nombre_impresora=None):
     """
-    Imprime un ticket de prueba simple
-    Retorna True si fue exitoso, False en caso contrario
+    Imprime un ticket de prueba simple.
+    Si se pasa nombre_impresora, usa esa; si no, la configurada.
     """
     if not ESCPOS_AVAILABLE:
         print("Error: python-escpos no está disponible")
@@ -829,13 +873,26 @@ def imprimir_ticket_prueba():
     
     printer = None
     try:
-        printer = obtener_impresora()
-        if not printer:
-            return False
+        if nombre_impresora:
+            if not verificar_impresora_existe(nombre_impresora):
+                print(f"Error: La impresora '{nombre_impresora}' no se encuentra en el sistema")
+                return False
+            printer = Win32Raw(nombre_impresora)
+            nombre_mostrar = nombre_impresora
+        else:
+            printer = obtener_impresora()
+            if not printer:
+                return False
+            config = cargar_configuracion()
+            nombre_mostrar = config.get('impresora', {}).get('nombre_impresora', '')
         
         printer.set(align='center', font='a', width=1, height=1, bold=True)
         printer.text("TICKET DE PRUEBA\n")
-        printer.text("Impresora XP-80C\n")
+        printer.text("PAPUCHO FOODTRUCK\n")
+        printer.set(align='center', bold=False)
+        printer.text("Impresora termica 80mm\n")
+        if nombre_mostrar:
+            printer.text(f"{nombre_mostrar}\n")
         printer.text("\n\n")
         printer.cut()
         
