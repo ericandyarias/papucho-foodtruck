@@ -299,12 +299,30 @@ class Seleccion(ttk.Frame):
             ).grid(row=2, column=0, sticky='w')
             
             # Botón agregar
-            btn_agregar = ttk.Button(
+            btn_agregar = tk.Button(
                 frame_producto,
                 text="➕ Agregar",
-                command=lambda p=producto: self.on_agregar_producto(p)
+                command=lambda p=producto: self.on_agregar_producto(p),
+                font=('Arial', 11, 'bold'),
+                padx=16,
+                pady=10,
+                bg='#27ae60',
+                fg='white',
+                relief='flat',
+                cursor='hand2',
+                activebackground='#2ecc71',
+                activeforeground='white'
             )
-            btn_agregar.grid(row=0, column=2, padx=10, pady=5, sticky='e')
+            btn_agregar.grid(row=0, column=2, padx=10, pady=8, sticky='e')
+
+            def on_enter_agregar(event, b=btn_agregar):
+                b.config(bg='#2ecc71')
+
+            def on_leave_agregar(event, b=btn_agregar):
+                b.config(bg='#27ae60')
+
+            btn_agregar.bind('<Enter>', on_enter_agregar)
+            btn_agregar.bind('<Leave>', on_leave_agregar)
 
         self.canvas_productos.update_idletasks()
         actualizar_region_scroll(self.canvas_productos)
