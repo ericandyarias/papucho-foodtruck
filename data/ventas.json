@@ -449,6 +449,282 @@
           "subtotal": 8000.0
         }
       ]
+    },
+    {
+      "id": "f68bce29-4ec8-402a-aec7-1f60a54653e4",
+      "fecha_hora": "2026-08-24T21:07:20",
+      "numero": 422,
+      "nombre_cliente": "",
+      "tipo": "Servicio en mesa",
+      "forma_pago": "Desconocido",
+      "total": 61801.0,
+      "cuenta_en_resumen": true,
+      "items": [
+        {
+          "nombre": "Lomito Completo S/Papas",
+          "cantidad": 1,
+          "precio_unitario": 8800.0,
+          "subtotal": 8800.0
+        },
+        {
+          "nombre": "Lomito Simple S/Papas",
+          "cantidad": 1,
+          "precio_unitario": 7000.0,
+          "subtotal": 7000.0
+        },
+        {
+          "nombre": "Lomito Simple con papas",
+          "cantidad": 1,
+          "precio_unitario": 9000.0,
+          "subtotal": 9000.0
+        },
+        {
+          "nombre": "Lomito J y Q S/Papas",
+          "cantidad": 1,
+          "precio_unitario": 8500.0,
+          "subtotal": 8500.0
+        },
+        {
+          "nombre": "Milanesa Completa con papas",
+          "cantidad": 1,
+          "precio_unitario": 10500.0,
+          "subtotal": 10500.0
+        },
+        {
+          "nombre": "Milanesa Simple S/Papas",
+          "cantidad": 1,
+          "precio_unitario": 7000.0,
+          "subtotal": 7000.0
+        },
+        {
+          "nombre": "Papas Con Cheddar",
+          "cantidad": 1,
+          "precio_unitario": 7000.0,
+          "subtotal": 7000.0
+        },
+        {
+          "nombre": "Papas pay",
+          "cantidad": 1,
+          "precio_unitario": 1.0,
+          "subtotal": 1.0
+        },
+        {
+          "nombre": "Empanada (x1) de carne",
+          "cantidad": 1,
+          "precio_unitario": 2000.0,
+          "subtotal": 2000.0
+        },
+        {
+          "nombre": "empanada (x1) de J y Q",
+          "cantidad": 1,
+          "precio_unitario": 2000.0,
+          "subtotal": 2000.0
+        }
+      ]
+    },
+    {
+      "id": "c7d5113b-37bc-47be-98bc-a39d7d2035fb",
+      "fecha_hora": "2026-08-24T21:09:07",
+      "numero": 423,
+      "nombre_cliente": "messi",
+      "tipo": "Domicilio",
+      "forma_pago": "Efectivo",
+      "total": 3000.0,
+      "cuenta_en_resumen": true,
+      "items": [
+        {
+          "nombre": "super pancho",
+          "cantidad": 1,
+          "precio_unitario": 3000.0,
+          "subtotal": 3000.0
+        }
+      ]
+    },
+    {
+      "id": "b02f00d0-4171-4b48-874e-ce2373ea99be",
+      "fecha_hora": "2026-08-24T21:10:59",
+      "numero": 424,
+      "nombre_cliente": "",
+      "tipo": "Servicio en mesa",
+      "forma_pago": "Desconocido",
+      "total": 7000.0,
+      "cuenta_en_resumen": true,
+      "items": [
+        {
+          "nombre": "Papas Con Cheddar",
+          "cantidad": 1,
+          "precio_unitario": 7000.0,
+          "subtotal": 7000.0
+        }
+      ]
+    },
+    {
+      "id": "ba72c79c-1aa3-4c94-a6aa-00bc6f5156ce",
+      "fecha_hora": "2026-08-24T21:23:38",
+      "numero": 425,
+      "nombre_cliente": "",
+      "tipo": "Servicio en mesa",
+      "forma_pago": "Desconocido",
+      "total": 94700.0,
+      "cuenta_en_resumen": true,
+      "items": [
+        {
+          "nombre": "Hamburguesa Completa S/Papas",
+          "cantidad": 1,
+          "precio_unitario": 8000.0,
+          "subtotal": 8000.0
+        },
+        {
+          "nombre": "Hamburguesa Completa con papas",
+          "cantidad": 1,
+          "precio_unitario": 10000.0,
+          "subtotal": 10000.0
+        },
+        {
+          "nombre": "Hamburguesa Simple S/Papas",
+          "cantidad": 1,
+          "precio_unitario": 6000.0,
+          "subtotal": 6000.0
+        },
+        {
+          "nombre": "Hamburguesa Cheddar Simple",
+          "cantidad": 1,
+          "precio_unitario": 8000.0,
+          "subtotal": 8000.0
+        },
+        {
+          "nombre": "Hamburguesa Doble Cheddar",
+          "cantidad": 1,
+          "precio_unitario": 10000.0,
+          "subtotal": 10000.0
+        },
+        {
+          "nombre": "Empanadas (x6)",
+          "cantidad": 1,
+          "precio_unitario": 9000.0,
+          "subtotal": 9000.0
+        },
+        {
+          "nombre": "Empanadas (x12)",
+          "cantidad": 1,
+          "precio_unitario": 17500.0,
+          "subtotal": 17500.0
+        },
+        {
+          "nombre": "UNA DOCENA Y MEDIA EMPANADAS (x18)",
+          "cantidad": 1,
+          "precio_unitario": 26200.0,
+          "subtotal": 26200.0
+        }
+      ]
+    },
+    {
+      "id": "a39ed771-c0e8-4683-b769-851ec4e10b4b",
+      "fecha_hora": "2026-08-24T21:28:46",
+      "numero": 426,
+      "nombre_cliente": "",
+      "tipo": "Servicio en mesa",
+      "forma_pago": "Desconocido",
+      "total": 52700.0,
+      "cuenta_en_resumen": true,
+      "items": [
+        {
+          "nombre": "Empanadas (x6)",
+          "cantidad": 1,
+          "precio_unitario": 9000.0,
+          "subtotal": 9000.0
+        },
+        {
+          "nombre": "Empanadas (x12)",
+          "cantidad": 1,
+          "precio_unitario": 17500.0,
+          "subtotal": 17500.0
+        },
+        {
+          "nombre": "UNA DOCENA Y MEDIA EMPANADAS (x18)",
+          "cantidad": 1,
+          "precio_unitario": 26200.0,
+          "subtotal": 26200.0
+        }
+      ]
+    },
+    {
+      "id": "068d822c-4327-46e3-b030-33d1c196faf4",
+      "fecha_hora": "2026-08-24T21:40:32",
+      "numero": 427,
+      "nombre_cliente": "",
+      "tipo": "Servicio en mesa",
+      "forma_pago": "Desconocido",
+      "total": 36500.0,
+      "cuenta_en_resumen": true,
+      "items": [
+        {
+          "nombre": "Empanadas (x6)",
+          "cantidad": 1,
+          "precio_unitario": 9000.0,
+          "subtotal": 9000.0
+        },
+        {
+          "nombre": "Empanadas (x12)",
+          "cantidad": 1,
+          "precio_unitario": 17500.0,
+          "subtotal": 17500.0
+        },
+        {
+          "nombre": "Hamburguesa Completa con papas",
+          "cantidad": 1,
+          "precio_unitario": 10000.0,
+          "subtotal": 10000.0
+        }
+      ]
+    },
+    {
+      "id": "b3613ee1-11ea-4b52-a3ab-a5804ad16d9a",
+      "fecha_hora": "2026-08-24T21:52:43",
+      "numero": 428,
+      "nombre_cliente": "",
+      "tipo": "Servicio en mesa",
+      "forma_pago": "Desconocido",
+      "total": 40301.0,
+      "cuenta_en_resumen": true,
+      "items": [
+        {
+          "nombre": "Hamburguesa Completa S/Papas",
+          "cantidad": 1,
+          "precio_unitario": 8000.0,
+          "subtotal": 8000.0
+        },
+        {
+          "nombre": "Hamburguesa Completa con papas",
+          "cantidad": 1,
+          "precio_unitario": 10000.0,
+          "subtotal": 10000.0
+        },
+        {
+          "nombre": "Papas pay",
+          "cantidad": 1,
+          "precio_unitario": 1.0,
+          "subtotal": 1.0
+        },
+        {
+          "nombre": "super pancho",
+          "cantidad": 1,
+          "precio_unitario": 3000.0,
+          "subtotal": 3000.0
+        },
+        {
+          "nombre": "Milanesa Completa con papas",
+          "cantidad": 1,
+          "precio_unitario": 10500.0,
+          "subtotal": 10500.0
+        },
+        {
+          "nombre": "Milanesa Completo S/Papas",
+          "cantidad": 1,
+          "precio_unitario": 8800.0,
+          "subtotal": 8800.0
+        }
+      ]
     }
   ]
 }

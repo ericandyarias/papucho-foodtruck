@@ -32,6 +32,8 @@ from utils.imagenes import (
 from utils.tickets import (
     cargar_configuracion,
     guardar_configuracion_impresora,
+    guardar_enlace_qr,
+    obtener_enlace_qr,
     listar_impresoras_windows,
     imprimir_ticket_prueba,
 )
@@ -1340,36 +1342,39 @@ class VentanaAdministracion:
     def crear_pestaña_ventas(self, parent):
         """Pestaña de pedidos confirmados y resumen de control interno."""
         parent.columnconfigure(0, weight=1)
-        parent.rowconfigure(3, weight=1)
+        parent.rowconfigure(2, weight=1)
 
         frame_filtros = ttk.Frame(parent)
         frame_filtros.grid(row=0, column=0, sticky='ew', pady=(0, 6))
 
-        ttk.Label(frame_filtros, text="Periodo:").pack(side='left', padx=(0, 6))
-        self.var_periodo_ventas = tk.StringVar(value="Hoy")
-        self.combo_periodo_ventas = ttk.Combobox(
-            frame_filtros,
-            textvariable=self.var_periodo_ventas,
-            values=["Hoy", "Esta semana", "Este mes", "Personalizado"],
-            state='readonly',
-            width=16
-        )
-        self.combo_periodo_ventas.pack(side='left')
-        self.combo_periodo_ventas.bind('<<ComboboxSelected>>', lambda e: self.on_cambio_periodo_ventas())
+        hoy = date.today()
+        self.var_fecha_desde = tk.StringVar(value=hoy.strftime('%d/%m/%Y'))
+        self.var_fecha_hasta = tk.StringVar(value=hoy.strftime('%d/%m/%Y'))
 
+        ttk.Label(frame_filtros, text="Desde:").pack(side='left')
+        ttk.Entry(frame_filtros, textvariable=self.var_fecha_desde, width=12).pack(side='left', padx=(4, 2))
         ttk.Button(
             frame_filtros,
             text="📅",
             width=3,
-            command=self.elegir_dia_resumen
-        ).pack(side='left', padx=(6, 0))
+            command=lambda: self.abrir_calendario_ventas('desde')
+        ).pack(side='left', padx=(0, 12))
+
+        ttk.Label(frame_filtros, text="Hasta:").pack(side='left')
+        ttk.Entry(frame_filtros, textvariable=self.var_fecha_hasta, width=12).pack(side='left', padx=(4, 2))
+        ttk.Button(
+            frame_filtros,
+            text="📅",
+            width=3,
+            command=lambda: self.abrir_calendario_ventas('hasta')
+        ).pack(side='left')
 
         ttk.Button(
             frame_filtros,
             text="Actualizar",
             command=self.actualizar_lista_ventas,
             width=12
-        ).pack(side='left', padx=8)
+        ).pack(side='left', padx=10)
 
         ttk.Button(
             frame_filtros,
@@ -1378,54 +1383,20 @@ class VentanaAdministracion:
             width=16
         ).pack(side='left')
 
-        self.frame_rango_ventas = ttk.Frame(parent)
-        self.frame_rango_ventas.grid(row=1, column=0, sticky='w', pady=(0, 6))
-
-        hoy = date.today()
-        self.var_fecha_desde = tk.StringVar(value=hoy.strftime('%d/%m/%Y'))
-        self.var_fecha_hasta = tk.StringVar(value=hoy.strftime('%d/%m/%Y'))
-
-        ttk.Label(self.frame_rango_ventas, text="Desde:").pack(side='left')
-        ttk.Entry(self.frame_rango_ventas, textvariable=self.var_fecha_desde, width=12).pack(side='left', padx=(4, 2))
-        ttk.Button(
-            self.frame_rango_ventas,
-            text="📅",
-            width=3,
-            command=lambda: self.abrir_calendario_ventas('desde')
-        ).pack(side='left', padx=(0, 12))
-
-        ttk.Label(self.frame_rango_ventas, text="Hasta:").pack(side='left')
-        ttk.Entry(self.frame_rango_ventas, textvariable=self.var_fecha_hasta, width=12).pack(side='left', padx=(4, 2))
-        ttk.Button(
-            self.frame_rango_ventas,
-            text="📅",
-            width=3,
-            command=lambda: self.abrir_calendario_ventas('hasta')
-        ).pack(side='left')
-
-        ttk.Button(
-            self.frame_rango_ventas,
-            text="Ver rango",
-            command=self.actualizar_lista_ventas,
-            width=12
-        ).pack(side='left', padx=10)
-
-        self.frame_rango_ventas.grid_remove()
-
         self.label_resumen_ventas = ttk.Label(
             parent,
             text="",
             justify='left',
             font=('Arial', 10)
         )
-        self.label_resumen_ventas.grid(row=2, column=0, sticky='w', pady=(0, 8))
+        self.label_resumen_ventas.grid(row=1, column=0, sticky='w', pady=(0, 8))
 
         frame_lista = ttk.LabelFrame(
             parent,
             text="Pedidos  ·  usá la columna Acciones para eliminar, cambiar el pago o el estado",
             padding=8
         )
-        frame_lista.grid(row=3, column=0, sticky='nsew')
+        frame_lista.grid(row=2, column=0, sticky='nsew')
         frame_lista.columnconfigure(0, weight=1)
         frame_lista.rowconfigure(0, weight=1)
 
@@ -1465,19 +1436,9 @@ class VentanaAdministracion:
             text="Control interno: no es un comprobante fiscal. Los pedidos no confirmados quedan en la lista pero no suman al total.",
             foreground='gray',
             font=('Arial', 8)
-        ).grid(row=4, column=0, sticky='w', pady=(8, 0))
+        ).grid(row=3, column=0, sticky='w', pady=(8, 0))
 
         self.actualizar_lista_ventas()
-
-    def _clave_periodo_ventas(self):
-        texto = (self.var_periodo_ventas.get() if hasattr(self, 'var_periodo_ventas') else 'Hoy')
-        if texto == 'Esta semana':
-            return 'semana'
-        if texto == 'Este mes':
-            return 'mes'
-        if texto == 'Personalizado':
-            return 'personalizado'
-        return 'hoy'
 
     def _parsear_fecha_ui(self, texto):
         try:
@@ -1490,13 +1451,6 @@ class VentanaAdministracion:
         hasta = self._parsear_fecha_ui(self.var_fecha_hasta.get())
         return desde, hasta
 
-    def on_cambio_periodo_ventas(self):
-        if self._clave_periodo_ventas() == 'personalizado':
-            self.frame_rango_ventas.grid()
-        else:
-            self.frame_rango_ventas.grid_remove()
-        self.actualizar_lista_ventas()
-
     def abrir_calendario_ventas(self, cual):
         actual = self._parsear_fecha_ui(
             self.var_fecha_desde.get() if cual == 'desde' else self.var_fecha_hasta.get()
@@ -1508,39 +1462,21 @@ class VentanaAdministracion:
                 self.var_fecha_desde.set(texto)
             else:
                 self.var_fecha_hasta.set(texto)
-            self.var_periodo_ventas.set('Personalizado')
-            self.frame_rango_ventas.grid()
-            self.actualizar_lista_ventas()
-
-        CalendarioPopup(self.ventana, fecha_inicial=actual, al_elegir=al_elegir)
-
-    def elegir_dia_resumen(self):
-        actual = self._parsear_fecha_ui(self.var_fecha_desde.get()) or date.today()
-
-        def al_elegir(fecha):
-            texto = fecha.strftime('%d/%m/%Y')
-            self.var_fecha_desde.set(texto)
-            self.var_fecha_hasta.set(texto)
-            self.var_periodo_ventas.set('Personalizado')
-            self.frame_rango_ventas.grid()
             self.actualizar_lista_ventas()
 
         CalendarioPopup(self.ventana, fecha_inicial=actual, al_elegir=al_elegir)
 
     def actualizar_lista_ventas(self):
-        periodo = self._clave_periodo_ventas()
-        desde = hasta = None
-        if periodo == 'personalizado':
-            desde, hasta = self._fechas_personalizadas()
-            if not desde or not hasta:
-                messagebox.showwarning(
-                    "Fechas",
-                    "Ingrese las fechas Desde y Hasta con formato dd/mm/aaaa.",
-                    parent=self.ventana
-                )
-                return
+        desde, hasta = self._fechas_personalizadas()
+        if not desde or not hasta:
+            messagebox.showwarning(
+                "Fechas",
+                "Ingrese las fechas Desde y Hasta con formato dd/mm/aaaa.",
+                parent=self.ventana
+            )
+            return
         try:
-            pedidos, _inicio, _fin = pedidos_en_periodo(periodo, desde=desde, hasta=hasta)
+            pedidos, _inicio, _fin = pedidos_en_periodo('personalizado', desde=desde, hasta=hasta)
             resumen = calcular_resumen(pedidos)
         except Exception:
             pedidos = []
@@ -1742,25 +1678,18 @@ class VentanaAdministracion:
             )
 
     def exportar_ventas_ui(self):
-        from datetime import datetime as dt
-        periodo = self._clave_periodo_ventas()
-        desde = hasta = None
-        if periodo == 'personalizado':
-            desde, hasta = self._fechas_personalizadas()
-            if not desde or not hasta:
-                messagebox.showwarning(
-                    "Fechas",
-                    "Ingrese las fechas Desde y Hasta con formato dd/mm/aaaa.",
-                    parent=self.ventana
-                )
-                return
-        nombres = {
-            'hoy': 'hoy',
-            'semana': 'semana',
-            'mes': 'mes',
-            'personalizado': 'personalizado',
-        }
-        nombre = f"resumen_ventas_{nombres.get(periodo, periodo)}_{dt.now().strftime('%Y-%m-%d')}.xlsx"
+        desde, hasta = self._fechas_personalizadas()
+        if not desde or not hasta:
+            messagebox.showwarning(
+                "Fechas",
+                "Ingrese las fechas Desde y Hasta con formato dd/mm/aaaa.",
+                parent=self.ventana
+            )
+            return
+        nombre = (
+            f"resumen_ventas_{desde.strftime('%Y-%m-%d')}_"
+            f"{hasta.strftime('%Y-%m-%d')}.xlsx"
+        )
         ruta = filedialog.asksaveasfilename(
             parent=self.ventana,
             title="Exportar resumen de ventas",
@@ -1771,7 +1700,7 @@ class VentanaAdministracion:
         if not ruta:
             return
         try:
-            exportar_excel(ruta, periodo, desde=desde, hasta=hasta)
+            exportar_excel(ruta, 'personalizado', desde=desde, hasta=hasta)
             messagebox.showinfo(
                 "Exportar",
                 f"Excel guardado con formato.\n\n{ruta}\n\n"
@@ -1852,6 +1781,59 @@ class VentanaAdministracion:
             width=22
         ).pack(side='left')
 
+        frame_qr = ttk.LabelFrame(
+            contenedor,
+            text="QR del ticket de cliente",
+            padding=15
+        )
+        frame_qr.grid(row=1, column=0, sticky='ew', padx=10, pady=10)
+        frame_qr.columnconfigure(1, weight=1)
+
+        ttk.Label(
+            frame_qr,
+            text="Si hay un enlace, se imprime un QR al final del ticket del cliente\n"
+                 "(por ejemplo Instagram). Dejá el campo vacío si no querés QR.",
+            justify='left'
+        ).grid(row=0, column=0, columnspan=3, sticky='w', pady=(0, 12))
+
+        ttk.Label(frame_qr, text="Enlace:").grid(row=1, column=0, sticky='w', padx=(0, 8), pady=5)
+
+        self.var_enlace_qr = tk.StringVar()
+        self.entry_enlace_qr = ttk.Entry(
+            frame_qr,
+            textvariable=self.var_enlace_qr,
+            width=50
+        )
+        self.entry_enlace_qr.grid(row=1, column=1, sticky='ew', pady=5)
+
+        ttk.Button(
+            frame_qr,
+            text="💾 Guardar enlace",
+            command=self.guardar_enlace_qr_ui,
+            width=20
+        ).grid(row=1, column=2, padx=(8, 0), pady=5)
+
+        self.label_qr_estado = ttk.Label(
+            frame_qr,
+            text="",
+            foreground='gray'
+        )
+        self.label_qr_estado.grid(row=2, column=0, columnspan=3, sticky='w', pady=(4, 0))
+
+        enlace_guardado = obtener_enlace_qr()
+        if enlace_guardado:
+            self.var_enlace_qr.set(enlace_guardado)
+            self.label_qr_estado.config(
+                text="El QR se imprimirá en los próximos tickets de cliente.",
+                foreground='#27ae60'
+            )
+        else:
+            self.var_enlace_qr.set("https://www.instagram.com/papuccina_foodtruck/")
+            self.label_qr_estado.config(
+                text="Sugerencia cargada. Guardá el enlace para que salga en el ticket.",
+                foreground='#e67e22'
+            )
+
         self.actualizar_lista_impresoras()
 
     def actualizar_lista_impresoras(self):
@@ -1931,6 +1913,45 @@ class VentanaAdministracion:
             messagebox.showerror(
                 "Error",
                 f"No se pudo guardar la configuración.\nLos datos anteriores se mantienen.\n\n{str(e)}",
+                parent=self.ventana
+            )
+
+    def guardar_enlace_qr_ui(self):
+        """Guarda el enlace que se convierte en QR en el ticket de cliente."""
+        try:
+            enlace = (self.var_enlace_qr.get() or '').strip()
+        except Exception:
+            enlace = ''
+
+        try:
+            guardar_enlace_qr(enlace)
+            enlace_final = obtener_enlace_qr()
+            if enlace_final:
+                self.var_enlace_qr.set(enlace_final)
+                self.label_qr_estado.config(
+                    text="El QR se imprimirá en los próximos tickets de cliente.",
+                    foreground='#27ae60'
+                )
+                messagebox.showinfo(
+                    "Cambios realizados",
+                    "El enlace se guardó correctamente.\n\n"
+                    "Va a aparecer como QR al final del ticket del cliente.",
+                    parent=self.ventana
+                )
+            else:
+                self.label_qr_estado.config(
+                    text="No hay enlace. El ticket de cliente se imprime sin QR.",
+                    foreground='gray'
+                )
+                messagebox.showinfo(
+                    "Cambios realizados",
+                    "Se quitó el enlace. Los próximos tickets de cliente salen sin QR.",
+                    parent=self.ventana
+                )
+        except Exception as e:
+            messagebox.showerror(
+                "Error",
+                f"No se pudo guardar el enlace.\nLos datos anteriores se mantienen.\n\n{str(e)}",
                 parent=self.ventana
             )
 

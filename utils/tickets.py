@@ -39,7 +39,8 @@ def _config_por_defecto():
         },
         "tickets": {
             "incluir_fecha_hora": True,
-            "lineas_corte": 3
+            "lineas_corte": 3,
+            "enlace_qr": ""
         }
     }
 
@@ -53,9 +54,14 @@ def cargar_configuracion():
         if not isinstance(config, dict):
             return _config_por_defecto()
         config.setdefault("impresora", {})
-        config.setdefault("tickets", {"incluir_fecha_hora": True, "lineas_corte": 3})
+        config.setdefault("tickets", {"incluir_fecha_hora": True, "lineas_corte": 3, "enlace_qr": ""})
         if not isinstance(config.get("impresora"), dict):
             config["impresora"] = _config_por_defecto()["impresora"]
+        if not isinstance(config.get("tickets"), dict):
+            config["tickets"] = _config_por_defecto()["tickets"]
+        config["tickets"].setdefault("incluir_fecha_hora", True)
+        config["tickets"].setdefault("lineas_corte", 3)
+        config["tickets"].setdefault("enlace_qr", "")
         return config
     except FileNotFoundError:
         config_default = _config_por_defecto()
@@ -103,13 +109,89 @@ def guardar_configuracion_impresora(nombre_impresora):
     config.setdefault("impresora", {})
     if not isinstance(config.get("impresora"), dict):
         config["impresora"] = {}
-    config.setdefault("tickets", {"incluir_fecha_hora": True, "lineas_corte": 3})
+    config.setdefault("tickets", {"incluir_fecha_hora": True, "lineas_corte": 3, "enlace_qr": ""})
+    if not isinstance(config.get("tickets"), dict):
+        config["tickets"] = {"incluir_fecha_hora": True, "lineas_corte": 3, "enlace_qr": ""}
     config["impresora"]["nombre_impresora"] = nombre
     config["impresora"]["ancho_ticket"] = 80
     config["impresora"]["modelo"] = "Térmica 80mm"
 
     _guardar_json_atomico(obtener_ruta_config(), config)
     return config
+
+
+def normalizar_enlace_qr(enlace):
+    """Limpia el enlace. Vacío si no hay nada usable."""
+    texto = (enlace or "").strip()
+    if not texto:
+        return ""
+    if "://" not in texto:
+        texto = "https://" + texto
+    return texto
+
+
+def guardar_enlace_qr(enlace):
+    """Guarda el enlace del QR del ticket de cliente (puede quedar vacío para no imprimirlo)."""
+    texto = normalizar_enlace_qr(enlace)
+    config = cargar_configuracion()
+    if not isinstance(config, dict):
+        config = _config_por_defecto()
+    config.setdefault("tickets", {"incluir_fecha_hora": True, "lineas_corte": 3, "enlace_qr": ""})
+    if not isinstance(config.get("tickets"), dict):
+        config["tickets"] = {"incluir_fecha_hora": True, "lineas_corte": 3, "enlace_qr": ""}
+    config["tickets"]["enlace_qr"] = texto
+    _guardar_json_atomico(obtener_ruta_config(), config)
+    return config
+
+
+def obtener_enlace_qr(config=None):
+    if config is None:
+        config = cargar_configuracion()
+    tickets = config.get("tickets") if isinstance(config, dict) else {}
+    if not isinstance(tickets, dict):
+        return ""
+    return normalizar_enlace_qr(tickets.get("enlace_qr", ""))
+
+
+def imprimir_qr_ticket_cliente(printer, enlace):
+    """
+    Imprime un QR al final del ticket de cliente.
+    Primero intenta el comando nativo de la impresora; si falla, lo manda como imagen.
+    Si ambos fallan, el resto del ticket igual se imprime.
+    """
+    enlace = normalizar_enlace_qr(enlace)
+    if not enlace or printer is None:
+        return
+
+    try:
+        printer.set(align='center', font='a', width=1, height=1, bold=False)
+        printer.text("Seguinos en Instagram\n")
+    except Exception:
+        pass
+
+    try:
+        printer.qr(enlace, size=6, native=True, center=True)
+        return
+    except TypeError:
+        try:
+            printer.qr(enlace, size=6, native=True)
+            return
+        except Exception as e:
+            print(f"QR nativo no disponible, se intenta como imagen: {e}")
+    except Exception as e:
+        print(f"QR nativo no disponible, se intenta como imagen: {e}")
+
+    try:
+        printer.qr(enlace, size=6, native=False, center=True)
+        return
+    except TypeError:
+        try:
+            printer.qr(enlace, size=6, native=False)
+            return
+        except Exception as e:
+            print(f"No se pudo imprimir el QR como imagen: {e}")
+    except Exception as e:
+        print(f"No se pudo imprimir el QR como imagen: {e}")
 
 
 def listar_impresoras_windows():
@@ -586,19 +668,21 @@ def imprimir_ticket_escpos(pedido_info, tipo_ticket):
         printer.set(align='center')
         printer.text("=" * ancho_caracteres + "\n")
         
-        # Aumentar espaciado en ticket del cliente
+        # QR del Instagram u otro enlace (solo ticket de cliente)
         if tipo_ticket == 'CLIENTE':
+            imprimir_qr_ticket_cliente(printer, obtener_enlace_qr(config))
             printer.text("\n")
+            espacios_corte = 1
+        else:
+            espacios_corte = 2
+
+        for _ in range(espacios_corte):
             printer.text("\n")
-            printer.text("\n")
-        
-        # Espacios antes del corte
-        lineas_corte = config.get('tickets', {}).get('lineas_corte', 3)
-        for _ in range(lineas_corte):
-            printer.text("\n")
-        
-        # Cortar papel
-        printer.cut()
+
+        try:
+            printer.cut(mode="PART", feed=False)
+        except TypeError:
+            printer.cut()
         
         # Cerrar conexión
         printer.close()
@@ -807,8 +891,12 @@ def guardar_ticket_texto(pedido_info, tipo_ticket):
     # Separador final
     contenido.append("=" * ancho_caracteres)
     
-    # Aumentar espaciado en ticket del cliente
     if tipo_ticket == 'CLIENTE':
+        enlace = obtener_enlace_qr()
+        if enlace:
+            contenido.append("")
+            contenido.append(formatear_texto_centrado("Seguinos en Instagram", ancho_caracteres))
+            contenido.append(formatear_texto_centrado(enlace, ancho_caracteres))
         contenido.append("")
         contenido.append("")
         contenido.append("")
